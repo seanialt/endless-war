@@ -127,9 +127,9 @@ async def haunt(cmd):
 			response = "You're being a little TOO spooky lately, don't you think?"
 		elif ewmap.channel_name_is_poi(cmd.message.channel.name) == False:
 			response = "You can't commit violence from here."
-		elif ewmap.poi_is_pvp(haunted_data.poi) == False:
-			# Require the target to be flagged for PvP
-			response = "{} is not mired in the ENDLESS WAR right now.".format(member.display_name)
+		elif user_data.poi in [ewcfg.poi_id_copkilltown, ewcfg.poi_id_rowdyroughhouse, ewcfg.poi_id_juviesrow]:
+			# Require the target to be on the prowl
+			response = "{} is not on the prowl right now.".format(member.display_name)
 		elif haunted_data.life_state == ewcfg.life_state_corpse:
 			# Dead players can't be haunted.
 			response = "{} is already dead.".format(member.display_name)
@@ -139,11 +139,15 @@ async def haunt(cmd):
 		elif haunted_data.life_state == ewcfg.life_state_enlisted or haunted_data.life_state == ewcfg.life_state_juvenile:
 			# Target can be haunted by the player.
 			haunted_slimes = int(haunted_data.slimes / ewcfg.slimes_hauntratio)
-			if user_data.poi == haunted_data.poi:  # when haunting someone face to face, there is no cap and you get double the amount
+			if user_data.poi == haunted_data.poi:  # When haunting someone face to face, there is no cap and you get double the amount
 				haunted_slimes *= 2
+				# Cant go over cap when haunting subzones
+				if ewmap.poi_is_pvp(haunted_data.poi) == False and haunted_slimes > ewcfg.slimes_hauntmax:
+					haunted_slimes = ewcfg.slimes_hauntmax
 			elif haunted_slimes > ewcfg.slimes_hauntmax:
 				haunted_slimes = ewcfg.slimes_hauntmax
-
+				if ewmap.poi_is_pvp(haunted_data.poi) == True:
+					haunted_slimes *= 2
 			if -user_data.slimes < haunted_slimes:  # cap on for how much you can haunt
 				haunted_slimes = -user_data.slimes
 
