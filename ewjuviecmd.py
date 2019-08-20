@@ -684,20 +684,20 @@ async def print_grid(cmd):
 
 def get_cell_symbol(cell):
 	cell_str = " "
-	if cell > 2 * ewcfg.slimes_invein:
-		cell_str = "&"
-	elif cell > 1.5 * ewcfg.slimes_invein:
-		cell_str = "S"
-	elif cell > ewcfg.slimes_invein:
+	#if cell > 2 * ewcfg.slimes_invein:
+	#	cell_str = "&"
+	#elif cell > 1.5 * ewcfg.slimes_invein:
+	#	cell_str = "S"
+	if cell > 0.4 * ewcfg.slimes_invein:
 		cell_str = "~"
-	elif cell > 0.5 * ewcfg.slimes_invein:
-		cell_str = ";"
+	#elif cell > 0.5 * ewcfg.slimes_invein:
+	#	cell_str = ";"
 	elif cell > 0:
-		cell_str = ","
-	elif cell > -20 * ewcfg.slimes_pertile:
-		cell_str = "-"
+		cell_str = ";"
 	elif cell > -40 * ewcfg.slimes_pertile:
-		cell_str = "+"
+		cell_str = " "
+	#elif cell > -40 * ewcfg.slimes_pertile:
+	#	cell_str = "+"
 	else:
 		cell_str = "X"
 	return cell_str

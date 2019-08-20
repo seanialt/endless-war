@@ -306,17 +306,6 @@ def gen_bite_text(size):
 	text += " **!REEL NOW!!!!!**"
 	return text
 
-# If a fish doesn't bite, send one of these.
-nobite_text = [
-	"You patiently wait...",
-	"You look towards the green Slime Sea horizon...",
-	"This is so fucking boring...",
-	"You watch your hook bob...",
-	"You grow impatient and kick the rotted wooden guard rails...",
-	"AUUUUUGH JUST BITE THE FUCKING HOOK ALREADY...",
-	"You begin to zone-out a bit..."
-]
-
 """ Casts a line into the Slime Sea """
 async def cast(cmd):
 	time_now = round(time.time())
@@ -399,7 +388,7 @@ async def cast(cmd):
 
 					elif id_food == "kingpincrab":
 						if random.randrange(5) == 1:
-							fisher.current_fish = "kingpincrab"
+							fisher.current_fish = "uncookedkingpincrab"
 
 					elif float(item.time_expir if item.time_expir is not None else 0) < time.time():
 						if random.randrange(2) == 1:
@@ -460,7 +449,7 @@ async def cast(cmd):
 						return
 					timer += 1
 				if damp > 10:
-					await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, random.choice(nobite_text)))
+					await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, random.choice(ewcfg.nobite_text)))
 					fun -= 2
 					bun += 1
 					if bun >= 5:

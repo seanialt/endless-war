@@ -16,7 +16,7 @@ from ewfish import EwFish
 import ewdebug
 
 # Global configuration options.
-version = "v3.5d"
+version = "v3.5e"
 dir_msgqueue = 'msgqueue'
 
 discord_message_length_limit = 2000
@@ -1771,6 +1771,25 @@ def wef_tool(ctn = None):
 		ctn.crit = True
 		ctn.slimes_damage *= 2
 
+# weapon effect function for "bass"
+def wef_bass(ctn = None):
+	aim = (random.randrange(21) - 10)
+	user_mutations = ctn.user_data.get_mutations()
+	if aim <= -9:
+		if mutation_id_sharptoother in user_mutations:
+			if random.random() < 0.5:
+				ctn.miss = True
+				ctn.slimes_damage = 0
+		else:
+			ctn.miss = True
+			ctn.slimes_damage = 0
+
+	ctn.slimes_damage = int(ctn.slimes_damage * (1 + (aim / 10)))
+
+	if aim >= 9:
+		ctn.crit = True
+		ctn.slimes_damage = int(ctn.slimes_damage * 1.75)
+
 # All weapons in the game.
 weapon_list = [
 	EwWeapon( # 1
@@ -2044,6 +2063,27 @@ weapon_list = [
 		str_duel = "**whsssh, whsssh** {name_player} and {name_target} spend some quality time together,discussing fishing strategy and preferred types of bait.",
 		fn_effect = wef_tool,
 		str_description = "It's a super fishing rod",
+		acquisition = acquisition_smelting
+	),
+        EwWeapon(  # 13
+		id_weapon = "bass",
+		alias = [
+			"bass",
+		],
+		str_crit = "**Critical hit!!** Through skilled swipes {name_player} manages to sharply strike {name_target}’s {hitzone}.",
+		str_miss = "**MISS!!** {name_player} swings and misses like a dumbass!",
+		str_equip = "You equip the bass guitar, a highly distorted and reverbed riff of unknown origin plays as you place the strap over your neck.",
+		str_weapon = "a bass guitar.",
+		str_weaponmaster_self = "You are a rank {rank} master of the bass guitar.",
+		str_weaponmaster = "They are a rank {rank} master of the bass guitar.",
+		str_trauma_self = "There is a large concave dome in the side of your head.",
+		str_trauma = "There is a large concave dome in the side of their head.",
+		str_kill = "*CRASSHHH* {name_player} brings down the bass with righteous fury. Discordant notes play harshly as the bass trys its hardest to keep itself together. {emote_skull}",
+		str_killdescriptor = "smashed to pieces",
+		str_damage = "{name_target} is wacked across the {hitzone}!!",
+		str_duel = "**SMASHHH** {name_player} and {name_target} smash their bass together before admiring eachothers skillful basslines.",
+		fn_effect = wef_bass,
+		str_description = "It's a bass guitar. All of its strings are completely out of tune and rusted.",
 		acquisition = acquisition_smelting
 	)
 ]
@@ -3988,8 +4028,8 @@ fish_list  =  [
 	),
 	EwFish(
 		id_fish = "stunfisk",
-		str_name = fish_rarity_rare,
-		rarity = "Stunfisk",
+		str_name = "Stunfisk",
+		rarity = fish_rarity_rare,
 		catch_time = None,
 		catch_weather = fish_catchtime_rain,
 		str_desc = "Its hide is so tough it can be stepped on by Connor without being injured.",
@@ -8298,6 +8338,18 @@ smelting_recipe_list = [
 		},
 		products = ['fishingrod']
 	),
+        EwSmeltingRecipe(
+		id_recipe = "bass",
+		str_name = "a Bass Guitar",
+		alias = [
+			"bassguitar"
+		],
+		ingredients = {
+			'thebassedgod' : 1,
+			'string':4
+		},
+		products = ['bass']
+        )       
 ]
 
 # A map of id_recipe to EwSmeltingRecipe objects.
@@ -10054,6 +10106,39 @@ for bait in food_list:
 	else:
 		pass
 
+# If a fish doesn't bite, send one of these.
+nobite_text = [
+	"You patiently wait...",
+	"This is so fucking boring...",
+	"You watch your hook bob...",
+	"You grow impatient and kick the rotted wooden guard rails...",
+	"AUUUUUGH JUST BITE THE FUCKING HOOK ALREADY...",
+	"You begin to zone-out a bit...",
+	"Shouldn't you be doing something productive?",
+	"You sit patiently, eagerly awaiting a fish to bit...",
+	"You begin to daydream about fish sex... Gross...",
+	"You begin to daydream about fish sex... Hot...",
+	"You see a fish about to bite your hook, but you shout in elation, scaring it away...",
+	"You make direct eye contact with a fish, only to quickly look away...",
+	"♪ Fishing for Fishies! ♪",
+	"♪ That Captain Albert Alexander! ♪",
+	"You get the urge to jump in and try to grab a fish, but then you remember that you can't swim...",
+	"You hum some sea shanties...",
+	"You start to develop an existential crisis...",
+	"You jitter as other seamen catch fish before you. Fuck fishing...",
+	"You shake your head as a young seaman hooks a perfectly good slice of pizza on his hook... What a cretin...",
+	"You wonder if the Space Navy has been formed yet...",
+	"Man... Why were you excited for this shit?",
+	"Still better than Minesweeper...",
+	"Maybe one day your wife will pardon you...",
+	"Fuck fish...",
+	"You let out a deep sigh, in doing so, you scare away a fish...",
+	"Wouldn't it be funny if you just reached into the sea and grabbed one? Haha, yeah, that'd be funny...",
+	"You see a bird carry off a Plebefish in the distance... Good riddance...",
+	"You spot a stray bullet in the distance...",
+	"You see a dead body float up to the surface of the Slime...",
+	"Fish..."
+]
 
 # Dict of all help responses linked to their associated topics
 help_responses = {
