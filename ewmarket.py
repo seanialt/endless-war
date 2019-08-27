@@ -29,6 +29,7 @@ class EwMarket:
 	decayed_slimes = 0
 	donated_slimes = 0
 	donated_poudrins = 0
+	caught_fish = 0
 
 	# Dict of bazaar items available for purchase
 	bazaar_wares = None
@@ -45,7 +46,7 @@ class EwMarket:
 				cursor = conn.cursor();
 
 				# Retrieve object
-				cursor.execute("SELECT {time_lasttick}, {slimes_revivefee}, {negaslime}, {clock}, {weather}, {day}, {decayed_slimes}, {donated_slimes}, {donated_poudrins} FROM markets WHERE id_server = %s".format(
+				cursor.execute("SELECT {time_lasttick}, {slimes_revivefee}, {negaslime}, {clock}, {weather}, {day}, {decayed_slimes}, {donated_slimes}, {donated_poudrins}, {caught_fish} FROM markets WHERE id_server = %s".format(
 					time_lasttick = ewcfg.col_time_lasttick,
 					slimes_revivefee = ewcfg.col_slimes_revivefee,
 					negaslime = ewcfg.col_negaslime,
@@ -55,6 +56,7 @@ class EwMarket:
 					decayed_slimes = ewcfg.col_decayed_slimes,
 					donated_slimes = ewcfg.col_donated_slimes,
 					donated_poudrins = ewcfg.col_donated_poudrins,
+					caught_fish = ewcfg.col_caught_fish,
 				), (self.id_server, ))
 				result = cursor.fetchone();
 
@@ -69,6 +71,7 @@ class EwMarket:
 					self.decayed_slimes = result[6]
 					self.donated_slimes = result[7]
 					self.donated_poudrins = result[8]
+					self.caught_fish = result[9]
 
 					cursor.execute("SELECT {}, {} FROM bazaar_wares WHERE {} = %s".format(
 						ewcfg.col_name,
@@ -103,7 +106,7 @@ class EwMarket:
 			cursor = conn.cursor();
 
 			# Save the object.
-			cursor.execute("REPLACE INTO markets ({id_server}, {time_lasttick}, {slimes_revivefee}, {negaslime}, {clock}, {weather}, {day}, {decayed_slimes}, {donated_slimes}, {donated_poudrins}) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(
+			cursor.execute("REPLACE INTO markets ({id_server}, {time_lasttick}, {slimes_revivefee}, {negaslime}, {clock}, {weather}, {day}, {decayed_slimes}, {donated_slimes}, {donated_poudrins}, {caught_fish}) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(
 				id_server = ewcfg.col_id_server,
 				time_lasttick = ewcfg.col_time_lasttick,
 				slimes_revivefee = ewcfg.col_slimes_revivefee,
@@ -114,6 +117,7 @@ class EwMarket:
 				decayed_slimes = ewcfg.col_decayed_slimes,
 				donated_slimes = ewcfg.col_donated_slimes,
 				donated_poudrins = ewcfg.col_donated_poudrins,
+				caught_fish = ewcfg.col_caught_fish,
 			), (
 				self.id_server,
 				self.time_lasttick,
@@ -125,11 +129,18 @@ class EwMarket:
 				self.decayed_slimes,
 				self.donated_slimes,
 				self.donated_poudrins,
+				self.caught_fish,
+			))
+
+			cursor.execute("DELETE FROM bazaar_wares WHERE {} = %s".format(
+				ewcfg.col_id_server,
+			), (
+				self.id_server,
 			))
 
 			# Write out all current item rows.
 			for name in self.bazaar_wares:
-				cursor.execute("REPLACE INTO bazaar_wares({}, {}, {}) VALUES(%s, %s, %s)".format(
+				cursor.execute("INSERT INTO bazaar_wares({}, {}, {}) VALUES(%s, %s, %s)".format(
 					ewcfg.col_id_server,
 					ewcfg.col_name,
 					ewcfg.col_value,

@@ -18,6 +18,8 @@ from ewmutation import EwMutation
 from ewslimeoid import EwSlimeoid
 from ewplayer import EwPlayer
 
+from ewhunting import EwEnemy
+
 move_counter = 0
 
 
@@ -188,15 +190,15 @@ map_world = [
 	[ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 1
 	[ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 2
 	[ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 3
-	[ -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 4
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 5
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0, -1, -1, -1,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 6
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 7
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1,  0,  0, 30, -2, -1, -1, -1, -1, -1, -1], # 8
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, 20, -1, 20, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1], # 9
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -2, -1, -2, -1, -2, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0, -1, -1, -1, -3, -3, -2, -3, -3, -1, -1, -1, -1,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1], # 10
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1], # 11
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, 20, -2, -1, -3, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1], # 12
+	[ -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 4
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 5
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -2, 10, -2, 20, -2, 20, -2, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0, -1, -1, -1,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 6
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 7
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1,  0,  0, 30, -2, -1, -1, -1, -1, -1, -1], # 8
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, 20, -1, 20, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1], # 9
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -2, -1, -2, -1, -2, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0, -1, -1, -1, -3, -3, -2, -3, -3, -1, -1, -1, -2, -1,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1], # 10
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1], # 11
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, 20, -2, -1, -3, -1, -1, -1, -1,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1], # 12
 	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1], # 13
 	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0, 30, -3, 20, -2, -1, -3, 30,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -3, 20, -2, -1, -3, -1, -1, -1, -1, -1, -1], # 14
 	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, 20, -1, 20, -1, -3, -1, 20, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, 30, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1], # 15
@@ -628,6 +630,7 @@ def map_draw(path = None, coord = None):
 		y += 1
 
 def inaccessible(user_data = None, poi = None):
+
 	if poi == None or user_data == None:
 		return True
 
@@ -635,6 +638,8 @@ def inaccessible(user_data = None, poi = None):
 		return False
 
 	bans = user_data.get_bans()
+
+	locked_districts_list = retrieve_locked_districts(user_data.id_server)
 
 	if(
 		len(poi.factions) > 0 and
@@ -651,10 +656,105 @@ def inaccessible(user_data = None, poi = None):
 		set(poi.factions).issubset(set(bans))
 	):
 		return True
+	elif poi.id_poi in locked_districts_list and (user_data.life_state != ewcfg.life_state_executive or user_data.life_state != ewcfg.life_state_lucky):
+		return True
 	else:
 		return False
+	
+def retrieve_locked_districts(id_server):
+	locked_districts_list = []
+	
+	locked_districts = ewutils.execute_sql_query(
+		"SELECT {district} FROM global_locks WHERE id_server = %s AND {locked_status} = %s".format(
+			district=ewcfg.col_district,
+			locked_status=ewcfg.col_locked_status
+		), (
+			id_server,
+			'true'
+		))
+	for district in locked_districts:
+		locked_districts_list.append(district[0])
+		
+	return locked_districts_list
 
 
+"""
+	Go down the rabbit hole
+"""
+async def descend(cmd):
+	can_message_user = True
+	user = EwPlayer(id_user = cmd.message.author.id)
+	user_data = EwUser(member = cmd.message.author)
+
+	if user_data.poi not in [ewcfg.poi_id_tt_mines, ewcfg.poi_id_cv_mines, ewcfg.poi_id_mine]:
+		return await move(cmd)
+
+	else:
+		response = "Huh? What's this? There is a small, secluded crevice in the ground beneath you. This is extremely weird, you've never encountered anything like this before in all your days mining. Further investigation is required, obviously..."
+		await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+		await asyncio.sleep(3)
+
+		if user_data.poi == ewcfg.poi_id_tt_mines:
+			response = "You enter the crevice hesitantly..."
+
+		if user_data.poi == ewcfg.poi_id_cv_mines:
+			response = "You enter the crevice hesitantly..."
+
+		if user_data.poi == ewcfg.poi_id_mine:
+			response = "You enter the crevice hesitantly..."
+
+		try:
+			await ewutils.send_message(cmd.client, cmd.message.author, response)
+		except:
+			can_message_user = False
+			await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+		await asyncio.sleep(6)
+		if user_data.poi == ewcfg.poi_id_tt_mines:
+			response = "You splash down into a shallow pool of, what you can only assume, is slime. It is " \
+					   "pitch-black, you struggle to make out even the waves lapping at your knees. The air " \
+					   "is thick with a dense fog of toxic fumes. Nothing you haven't encountered before in " \
+					   "Toxington, yet this fog feels strangely foreign. You whip out your smartphone and " \
+					   "illuminate your surroundings."
+			response += "\nhttps://ew.krakissi.net/img/sc/tt1temnbnmwrwnek.png"
+			response += "\nhttps://ew.krakissi.net/img/sc/tt23z83eu38e8u.png"
+
+		if user_data.poi == ewcfg.poi_id_cv_mines:
+			response = "You crawl for a few moments until you reach a small opening. It is extremely dark, " \
+					   "you struggle to make out what exactly you’ve just entered. However, whatever it is, " \
+					   "it has clearly been inhabited by humans. How recently you cannot ascertain. Fragments of " \
+					   "clay pots and tablets lay all across the unnaturally smooth cave floor. You whip out " \
+					   "your smartphone and illuminate your surroundings."
+			response += "\nhttps://ew.krakissi.net/img/sc/cv1jioijlkn.png"
+			response += "\nhttps://ew.krakissi.net/img/sc/cv2bnbjkuwefd.png"
+
+		if user_data.poi == ewcfg.poi_id_mine:
+			response = "You drop several feet into… well, you quite frankly have no idea. It is so pitch-black " \
+					   "that you cannot make out any surroundings. All you know that is dark and damp. " \
+					   "It seems like someone was just here, recently… You whip out your smartphone and " \
+					   "illuminate your surroundings."
+			response += "\nhttps://ew.krakissi.net/img/sc/jr1zcugbtownn.png"
+			response += "\nhttps://ew.krakissi.net/img/sc/jr23b5nv4bv53n4.png"
+
+			if can_message_user:
+				await ewutils.send_message(cmd.client, cmd.message.author, response)
+			else:
+				await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+			await asyncio.sleep(6)
+			response = "There seems to be someone's lost identification card laying on the ground."
+			response += "\nhttps://ew.krakissi.net/img/sc/N6CARDpibkjwheuidcw.png"
+
+		if can_message_user:
+			await ewutils.send_message(cmd.client, cmd.message.author, response)
+		else:
+			await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+		await asyncio.sleep(12)
+		response = "You return to the Mines..."
+
+	await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+	
 """
 	Player command to move themselves from one place to another.
 """
@@ -669,7 +769,22 @@ async def move(cmd):
 	user_data = EwUser(member = cmd.message.author)
 	poi_current = ewcfg.id_to_poi.get(user_data.poi)
 	poi = ewcfg.id_to_poi.get(target_name)
+	movement_method = ""
+	
+	if user_data.poi == ewcfg.debugroom:
+		movement_method = "descending"
+		try:
+			if poi.id_poi == ewcfg.poi_id_slimeoidlab:
+				movement_method = "walking"
+		except:
+			pass
+	else:
+		movement_method = "walking"
 
+	if user_data.poi == ewcfg.debugroom and cmd.tokens[0] != (ewcfg.cmd_descend) and poi.id_poi != ewcfg.poi_id_slimeoidlab:
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "You can't move forwards or backwards in an {}, bitch.".format(ewcfg.debugroom_short)))
+	elif user_data.poi != ewcfg.debugroom and cmd.tokens[0] == (ewcfg.cmd_descend):
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "You can't move downwards on a solid surface, bitch."))
 
 	if poi == None:
 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "Never heard of it."))
@@ -710,15 +825,18 @@ async def move(cmd):
 
 	minutes = int(path.cost / 60)
 	seconds = path.cost % 60
-
-	msg_walk_start = await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "You begin walking to {}.{}".format(
-		poi.str_name,
-		(" It's {} minute{}{} away.".format(
-			minutes,
-			("s" if minutes != 1 else ""),
-			(" and {} seconds".format(seconds) if seconds > 4 else "")
-		) if minutes > 0 else (" It's {} seconds away.".format(seconds) if seconds > 30 else ""))
-	)))
+	
+	if movement_method == "descending":
+		msg_walk_start = await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "You press the button labeled {}. You will arrive in {} seconds.".format(poi.str_name, seconds)))
+	else:
+		msg_walk_start = await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "You begin walking to {}.{}".format(
+			poi.str_name,
+			(" It's {} minute{}{} away.".format(
+				minutes,
+				("s" if minutes != 1 else ""),
+				(" and {} seconds".format(seconds) if seconds > 4 else "")
+			) if minutes > 0 else (" It's {} seconds away.".format(seconds) if seconds > 30 else ""))
+		)))
 
 	life_state = user_data.life_state
 	faction = user_data.faction
@@ -941,6 +1059,7 @@ async def teleport(cmd):
 		mutation_data.persist()
 		ewutils.moves_active[cmd.message.author.id] = 0
 		user_data.poi = poi.id_poi
+		user_data.time_lastenter = int(time.time())
 		user_data.persist()
 		response = "WHOOO-"
 		await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
@@ -952,7 +1071,34 @@ async def teleport(cmd):
 		response = "You don't have any toilet paper."
 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 
+async def teleport_player(cmd):
+	author = cmd.message.author
+	user_data = EwUser(member=author)
 	
+	if author.server_permissions.administrator or user_data.life_state == ewcfg.life_state_kingpin:
+		pass
+	else:
+		return
+	
+	if cmd.mentions_count == 1:
+		target = cmd.mentions[0]
+	else:
+		return
+	
+	destination = cmd.tokens[2]
+	
+	new_poi = ewcfg.id_to_poi.get(destination)
+	
+	if target != None and new_poi != None:
+		target_user = EwUser(member=target)
+		target_player = EwPlayer(id_user=target_user.id_user)
+		
+		target_user.poi = new_poi.id_poi
+		target_user.persist()
+		
+		response = "{} has been teleported to {}".format(target_player.display_name, new_poi.id_poi)
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
 
 """
 	Dump out the visual description of the area you're in.
@@ -964,7 +1110,7 @@ async def look(cmd):
 
 	# get information about slime levels in the district
 	slimes = district_data.slimes
-	slimes_resp = "\n\n"
+	slimes_resp = ""
 	if slimes < 10000:
 		slimes_resp += "There are a few specks of slime splattered across the city streets."
 	elif slimes < 100000:
@@ -996,6 +1142,29 @@ async def look(cmd):
 	else:
 		players_resp += "You feel the ground rumble from a stampeding horde of gangsters in this district."
 
+	# lists off enemies in district
+	enemies_in_district = district_data.get_enemies_in_district()
+
+	num_enemies = len(enemies_in_district)
+
+	enemies_resp = "\n\n"
+	numerator = 0
+
+	if num_enemies == 0:
+		enemies_resp = ""
+		# enemies_resp += "You don't find any enemies in this district."
+	elif num_enemies == 1:
+		found_enemy_data = EwEnemy(id_enemy = enemies_in_district[0])
+		enemies_resp += "You look around and find a **{} {}** in this location.".format(found_enemy_data.display_name, found_enemy_data.identifier)
+	else:
+		enemies_resp += "You notice several enemies in this district, such as "
+		while numerator < (len(enemies_in_district)-1):
+			found_enemy_data = EwEnemy(id_enemy = enemies_in_district[numerator])
+			enemies_resp += "**{} {}**, ".format(found_enemy_data.display_name, found_enemy_data.identifier)
+			numerator += 1
+		final_enemy_data = EwEnemy(id_enemy = enemies_in_district[num_enemies-1])
+		enemies_resp += "and **{} {}**.".format(final_enemy_data.display_name, final_enemy_data.identifier)
+
 	players_resp = ""
 	
 	slimeoids_resp = ""
@@ -1015,13 +1184,20 @@ async def look(cmd):
 	if poi != None:
 		await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(
 			cmd.message.author,
-			"You stand {} {}.\n\n{}{}{}{}{}".format(
+			"You stand {} {}.\n\n{}\n\n...".format(
 				poi.str_in,
 				poi.str_name,
-				poi.str_desc,
+				poi.str_desc
+			)
+		))
+		await asyncio.sleep(0.1)
+		await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(
+			cmd.message.author,
+			"{}{}{}{}{}".format(
 				slimes_resp,
 				players_resp,
 				slimeoids_resp,
+				enemies_resp,
 				("\n\n{}".format(
 					ewcmd.weather_txt(cmd.message.server.id)
 				) if cmd.message.server != None else "")
@@ -1081,7 +1257,7 @@ async def scout(cmd):
 
 		district_data = EwDistrict(district = poi.id_poi, id_server = user_data.id_server)
 
-		# don't show low level players
+		# don't show low level players or enemies
 		min_level = math.ceil((1/10) ** 0.25 * user_data.slimelevel)
 
 		life_states = [ewcfg.life_state_enlisted]
@@ -1092,8 +1268,8 @@ async def scout(cmd):
 
 
 		num_players = 0
-		players_resp = ""
-		detailed_resp = "You pick up the scent of the following gangsters:"
+		players_resp = "\n"
+		detailed_players_resp = "You pick up the scent of the following gangsters:"
 		for player in players_in_district:
 			scoutee_data = EwUser(id_user = player, id_server = user_data.id_server)
 			scoutee_player = EwPlayer(id_user = player)
@@ -1105,15 +1281,28 @@ async def scout(cmd):
 				if len(allies_in_district) > 3:
 					continue
 			if ewcfg.mutation_id_chameleonskin in scoutee_mutations:
-				detailed_resp += "\n" + scoutee_player.display_name
+				detailed_players_resp += "\n" + scoutee_player.display_name
 				continue
 			if ewcfg.mutation_id_aposematicstench in scoutee_mutations:
 				num_players += math.floor(scoutee_data.slimelevel / 5)
 				continue
 
-			detailed_resp += "\n" + scoutee_player.display_name
+
+			detailed_players_resp += "\n" + scoutee_player.display_name
+
 			num_players += 1
-	
+
+		# filters out low level enemies
+		enemies_in_district = district_data.get_enemies_in_district(min_level=min_level)
+
+		num_enemies = 0
+		enemies_resp = ""
+
+		detailed_enemies_resp = "You pick up the scent of the following enemies:"
+		for enemy in enemies_in_district:
+			enemy_data = EwEnemy(id_enemy=enemy)
+			detailed_enemies_resp += "\n**{}**".format(enemy_data.display_name)
+			num_enemies += 1
 
 		if num_players == 0:
 			players_resp += "You don’t notice any activity from this district."
@@ -1126,15 +1315,36 @@ async def scout(cmd):
 		else:
 			players_resp += "You feel the ground rumble from a stampeding horde of gangsters in this district."
 
-		if ewcfg.mutation_id_keensmell in mutations:
-			players_resp += " " + detailed_resp
+		if ewcfg.mutation_id_keensmell in mutations and num_players >= 1:
+			players_resp += " " + detailed_players_resp
+
+		# to avoid visual clutter, no scouting message is sent out for 0 enemies
+		if num_enemies == 0:
+			enemies_resp = ""
+		elif num_enemies == 1:
+			enemies_resp += "You can faintly hear the bleating of an enemy coming from this district."
+		elif num_enemies <= 5:
+			enemies_resp += "You manage to pick up the sound of a few enemies howling amongst each other in this district."
+		elif num_enemies <= 10:
+			enemies_resp += "Your nerves tense due to the incredibly audible savagery coming from several enemies in this district."
+		else:
+			enemies_resp += "You feel shivers down your spine from the sheer amount of enemies ramping and raving within this district."
+
+		if ewcfg.mutation_id_keensmell in mutations and num_enemies >= 1:
+			enemies_resp += " " + detailed_enemies_resp
+
+		if num_players == 0 and num_enemies >= 1:
+			players_resp = ""
+		elif num_players >= 1 and num_enemies == 0:
+			enemies_resp = ""
 
 		# post result to channel
 		await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(
 			cmd.message.author,
-			"**{}**: {}".format(
+			"**{}**:{}\n{}".format(
 				poi.str_name,
-				players_resp
+				players_resp,
+				enemies_resp
 			)
 		))
 

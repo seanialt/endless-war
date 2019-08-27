@@ -6,8 +6,8 @@ import ewutils
 import ewcfg
 import ewstats
 import ewitem
-
-""" Market data model for database persistence """
+import ewstatuseffects
+from ewstatuseffects import EwStatusEffect
 
 """ User model for database persistence """
 class EwUser:
@@ -28,7 +28,6 @@ class EwUser:
 	weaponskill = 0
 	trauma = ""
 	poi_death = ""
-	ghostbust = False
 	inebriation = 0
 	faction = ""
 	poi = ""
@@ -150,7 +149,8 @@ class EwUser:
 			self.poi_death = self.poi
 			ewstats.increment_stat(user = self, metric = ewcfg.stat_lifetime_deaths)
 			ewstats.change_stat(user = self, metric = ewcfg.stat_lifetime_slimeloss, n = self.slimes)
-			if cause != ewcfg.cause_killing and cause != ewcfg.cause_suicide and cause != ewcfg.cause_bleeding:
+			if (cause != ewcfg.cause_killing and cause != ewcfg.cause_suicide and cause != ewcfg.cause_bleeding) \
+			or (cause == ewcfg.cause_enemy_killing):
 				ewstats.increment_stat(user = self, metric = ewcfg.stat_lifetime_pve_deaths)
 		ewitem.item_dedorn_cosmetics(id_server = self.id_server, id_user = self.id_user)
 		ewitem.item_dropall(id_server = self.id_server, id_user = self.id_user)
@@ -161,7 +161,6 @@ class EwUser:
 		self.slimelevel = 1
 		self.hunger = 0
 		self.inebriation = 0
-		self.ghostbust = False
 		# Clear weapon and weaponskill.
 		self.weapon = -1
 		self.weaponskill = 0
@@ -172,6 +171,11 @@ class EwUser:
 		
 		self.clear_mutations()
 		#ewitem.item_destroyall(id_server = self.id_server, id_user = self.id_user)
+
+		statuses = self.getStatusEffects()
+
+		for status in statuses:
+			self.clear_status(id_status=status)
 
 		ewutils.logMsg('server {}: {} was killed by {} - cause was {}'.format(self.id_server, self.id_user, self.id_killer, cause))
 
@@ -241,10 +245,10 @@ class EwUser:
 			self.inebriation += int(item_props['inebriation'])
 			if self.inebriation > 20:
 				self.inebriation = 20
-
+						
 			try:
 				if item_props['id_food'] in ["coleslaw","bloodcabbagecoleslaw"]:
-					self.ghostbust = True
+					self.applyStatus(id_status = ewcfg.status_ghostbust_id)
 					#Bust player if they're a ghost
 					if self.life_state == ewcfg.life_state_corpse:
 						self.die(cause = ewcfg.cause_busted)
@@ -320,14 +324,83 @@ class EwUser:
 		elif self.weaponmarried == True:
 			current_weapon = ewitem.EwItem(id_item = self.weapon)
 			response = "You reach to pick up a new weapon, but your old {} remains motionless with jealousy. You dug your grave, now decompose in it.".format(current_weapon.item_props.get("weapon_name") if len(current_weapon.item_props.get("weapon_name")) > 0 else "partner")
-			#Have to load the item again or the wrong item props are used
-			weapon_item = ewitem.EwItem(id_item = weapon_item.id_item)
 		else:
 			response = "You equip your " + (weapon_item.item_props.get("weapon_type") if len(weapon_item.item_props.get("weapon_name")) == 0 else weapon_item.item_props.get("weapon_name"))
 			self.weapon = weapon_item.id_item
 
 		return response
 
+	def getStatusEffects(self):
+		values = []
+
+		try:
+			data = ewutils.execute_sql_query("SELECT {id_status} FROM status_effects WHERE {id_server} = %s and {id_user} = %s".format(
+				id_status = ewcfg.col_id_status,
+				id_server = ewcfg.col_id_server,
+				id_user = ewcfg.col_id_user
+			), (
+				self.id_server,
+				self.id_user
+			))
+
+			for row in data:
+				values.append(row[0])
+
+		except:
+			pass
+		finally:
+			return values
+
+	def applyStatus(self, id_status = None, value = 0, source = 0):
+		response = ""
+		if id_status != None:
+			status = None
+
+			status = ewcfg.status_effects_def_map.get(id_status)
+
+			if status != None:
+				statuses = self.getStatusEffects()
+
+				status_effect = EwStatusEffect(id_status=id_status, user_data=self, time_expire=status.time_expire, value=value, source=source)
+
+				if id_status in statuses:
+					status_effect.value = value
+
+					if status.time_expire > 0 and id_status in ewcfg.stackable_status_effects:
+						status_effect.time_expire += status.time_expire
+						response = status.str_acquire
+
+					status_effect.persist() 
+				else:
+					response = status.str_acquire
+					
+
+		return response		
+
+	def clear_status(self, id_status = None):
+		if id_status != None:
+			try:
+				conn_info = ewutils.databaseConnect()
+				conn = conn_info.get('conn')
+				cursor = conn.cursor()
+
+				# Save the object.
+				cursor.execute("DELETE FROM status_effects WHERE {id_status} = %s and {id_user} = %s and {id_server} = %s".format(
+					id_status = ewcfg.col_id_status,
+					id_user = ewcfg.col_id_user,
+					id_server = ewcfg.col_id_server
+				), (
+					id_status,
+					self.id_user,
+					self.id_server
+				))
+
+				conn.commit()
+			finally:
+				# Clean up the database handles.
+				cursor.close()
+				ewutils.databaseClose(conn_info)
+				
 	def get_weapon_capacity(self):
 		mutations = self.get_mutations()
 		base_capacity = ewutils.weapon_carry_capacity_bylevel(self.slimelevel)
@@ -412,7 +485,7 @@ class EwUser:
 				cursor = conn.cursor();
 
 				# Retrieve object
-				cursor.execute("SELECT {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} FROM users WHERE id_user = %s AND id_server = %s".format(
+				cursor.execute("SELECT {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} FROM users WHERE id_user = %s AND id_server = %s".format(
 					ewcfg.col_slimes,
 					ewcfg.col_slimelevel,
 					ewcfg.col_hunger,
@@ -427,7 +500,6 @@ class EwUser:
 					ewcfg.col_time_lastspar,
 					ewcfg.col_time_lasthaunt,
 					ewcfg.col_time_lastinvest,
-					ewcfg.col_ghostbust,
 					ewcfg.col_inebriation,
 					ewcfg.col_faction,
 					ewcfg.col_poi,
@@ -467,24 +539,23 @@ class EwUser:
 					self.time_lastspar = result[11]
 					self.time_lasthaunt = result[12]
 					self.time_lastinvest = result[13]
-					self.ghostbust = (result[14] == 1)
-					self.inebriation = result[15]
-					self.faction = result[16]
-					self.poi = result[17]
-					self.life_state = result[18]
-					self.busted = (result[19] == 1)
-					self.rr_challenger = result[20]
-					self.time_last_action = result[21]
-					self.weaponmarried = (result[22] == 1)
-					self.time_lastscavenge = result[23]
-					self.bleed_storage = result[24]
-					self.time_lastenter = result[25]
-					self.time_lastoffline = result[26]
-					self.time_joined = result[27]
-					self.poi_death = result[28]
-					self.slime_donations = result[29]
-					self.poudrin_donations = result[30]
-					self.arrested = (result[31] == 1)
+					self.inebriation = result[14]
+					self.faction = result[15]
+					self.poi = result[16]
+					self.life_state = result[17]
+					self.busted = (result[18] == 1)
+					self.rr_challenger = result[19]
+					self.time_last_action = result[20]
+					self.weaponmarried = (result[21] == 1)
+					self.time_lastscavenge = result[22]
+					self.bleed_storage = result[23]
+					self.time_lastenter = result[24]
+					self.time_lastoffline = result[25]
+					self.time_joined = result[26]
+					self.poi_death = result[27]
+					self.slime_donations = result[28]
+					self.poudrin_donations = result[29]
+					self.arrested = (result[30] == 1)
 				else:
 					self.poi = ewcfg.poi_id_downtown
 					self.life_state = ewcfg.life_state_juvenile
@@ -540,7 +611,7 @@ class EwUser:
 			self.limit_fix();
 
 			# Save the object.
-			cursor.execute("REPLACE INTO users({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(
+			cursor.execute("REPLACE INTO users({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(
 				ewcfg.col_id_user,
 				ewcfg.col_id_server,
 				ewcfg.col_slimes,
@@ -558,7 +629,6 @@ class EwUser:
 				ewcfg.col_time_lastspar,
 				ewcfg.col_time_lasthaunt,
 				ewcfg.col_time_lastinvest,
-				ewcfg.col_ghostbust,
 				ewcfg.col_inebriation,
 				ewcfg.col_faction,
 				ewcfg.col_poi,
@@ -594,7 +664,6 @@ class EwUser:
 				self.time_lastspar,
 				self.time_lasthaunt,
 				self.time_lastinvest,
-				(1 if self.ghostbust else 0),
 				self.inebriation,
 				self.faction,
 				self.poi,
@@ -619,3 +688,4 @@ class EwUser:
 			# Clean up the database handles.
 			cursor.close()
 			ewutils.databaseClose(conn_info)
+

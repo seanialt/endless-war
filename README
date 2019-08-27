@@ -25,7 +25,6 @@ CREATE TABLE users (
 	totaldamage bigint NOT NULL DEFAULT '0',
 	weaponskill int NOT NULL DEFAULT '0',
 	bounty bigint NOT NULL DEFAULT '0',
-	ghostbust int NOT NULL DEFAULT '0',
 	inebriation int NOT NULL DEFAULT '0',
 	faction varchar(32) NOT NULL default '',
 	poi varchar(64) NOT NULL default 'downtown',
@@ -67,6 +66,7 @@ CREATE TABLE markets (
 	decayed_slimes bigint NOT NULL DEFAULT '0',
 	donated_slimes bigint NOT NULL DEFAULT '0',
 	donated_poudrins bigint NOT NULL DEFAULT '0',
+	caught_fish int NOT NULL DEFAULT '0',
 
 	PRIMARY KEY (id_server)
 );
@@ -192,6 +192,30 @@ CREATE TABLE slimeoids (
 	PRIMARY KEY (id_slimeoid)
 );
 
+CREATE TABLE enemies (
+    id_enemy int NOT NULL AUTO_INCREMENT,
+    id_server varchar(128) NOT NULL,
+    slimes bigint NOT NULL DEFAULT '0',
+    totaldamage bigint NOT NULL DEFAULT '0',
+    ai varchar(32) NOT NULL DEFAULT '',
+    enemytype varchar(32) NOT NULL DEFAULT '',
+    attacktype varchar(32) NOT NULL DEFAULT '',
+    display_name varchar(32) NOT NULL DEFAULT '',
+    identifier varchar(32) NOT NULL DEFAULT '',
+    level int NOT NULL DEFAULT '0',
+    poi varchar(64) NOT NULL DEFAULT '',
+    life_state int NOT NULL DEFAULT '0',
+    bleed_storage bigint NOT NULL DEFAULT '0',
+    time_lastenter int NOT NULL DEFAULT '0',
+    initialslimes bigint NOT NULL DEFAULT '0',
+    lifetime bigint NOT NULL DEFAULT '0',
+    id_target varchar(128) NOT NULL DEFAULT '',
+    raidtimer bigint NOT NULL DEFAULT '0',
+    rare_status int NOT NULL DEFAULT '0',
+
+    PRIMARY KEY (id_enemy)
+);
+
 CREATE TABLE districts (
 	id_server varchar(128) NOT NULL,
 	district varchar(32) NOT NULL,
@@ -244,6 +268,18 @@ CREATE TABLE transports (
 	PRIMARY KEY(id_server, poi)
 );
 
+CREATE TABLE status_effects (
+	id_server varchar(128) NOT NULL,
+	id_user varchar(128) NOT NULL,
+	id_status varchar(64) NOT NULL,
+	
+	time_expir int NOT NULL DEFAULT '-1',
+	value varchar(255) NOT NULL DEFAULT 0,
+	source varchar(128) NOT NULL DEFAULT '',
+
+	PRIMARY KEY (id_server, id_user, id_status)
+);
+
 CREATE TABLE bans (
 	id_server varchar(128) NOT NULL,
 	id_user varchar(128) NOT NULL,
@@ -268,4 +304,12 @@ CREATE TABLE offers (
 	time_sinceoffer int NOT NULL DEFAULT '0',
 
 	PRIMARY KEY (id_server, id_user, offer_give)
+);
+
+CREATE TABLE global_locks (
+    id_server varchar(128) NOT NULL,
+	district varchar(32) NOT NULL,
+	locked_status varchar(32) NOT NULL DEFAULT '',
+
+	PRIMARY KEY (id_server, district)
 );

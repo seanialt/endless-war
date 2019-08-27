@@ -12,10 +12,10 @@ import ewitem
 import ewmap
 import ewrolemgr
 import ewstats
+from ewitem import EwItem
 from ew import EwUser
 from ewmarket import EwMarket
 from ewdistrict import EwDistrict
-from ewitem import EwItem
 
 # Map of user ID to a map of recent miss-mining time to count. If the count
 # exceeds 3 in 5 seconds, you die.
@@ -262,7 +262,7 @@ async def mine(cmd):
 			if user_data.weapon >= 0:
 				weapon_item = EwItem(id_item = user_data.weapon)
 				weapon = ewcfg.weapon_map.get(weapon_item.item_props.get("weapon_type"))
-				if weapon.id_weapon == "pickaxe":
+				if weapon.id_weapon == ewcfg.weapon_id_pickaxe:
 					has_pickaxe = True
 
 			# Determine if an item is found.

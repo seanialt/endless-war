@@ -278,6 +278,8 @@ def item_create(
 	item_type = None,
 	id_user = None,
 	id_server = None,
+	stack_max = -1,
+	stack_size = 0,
 	item_props = None
 ):
 	item_def = ewcfg.item_def_map.get(item_type)
@@ -305,8 +307,8 @@ def item_create(
 			id_user,
 			id_server,
 			(1 if item_def.soulbound else 0),
-			item_def.stack_max,
-			item_def.stack_size
+			stack_max,
+			stack_size
 		))
 
 		item_id = cursor.lastrowid
@@ -412,7 +414,6 @@ def item_lootrandom(id_server = None, id_user = None):
 	response = ""
 
 	try:
-
 		user_data = EwUser(id_server = id_server, id_user = id_user)
 
 		items_in_poi = ewutils.execute_sql_query("SELECT {id_item} FROM items WHERE {id_owner} = %s AND {id_server} = %s".format(
@@ -449,7 +450,7 @@ def item_lootrandom(id_server = None, id_user = None):
 					item_type_filter = ewcfg.it_weapon
 				)
 
-				if len(weapons_held) > user_data.get_weapon_capacity():
+				if len(weapons_held) >= user_data.get_weapon_capacity():
 					response += " But you couldn't carry any more weapons, so you tossed it back."
 				else:
 					give_item(id_user = id_user, id_server = id_server, id_item = id_item)
@@ -464,9 +465,6 @@ def item_lootrandom(id_server = None, id_user = None):
 					)
 				give_item(id_user = id_user, id_server = id_server, id_item = id_item)
 
-
-
-
 		else:
 			response += "You found a... oh, nevermind, it's just a piece of trash."
 
@@ -475,6 +473,7 @@ def item_lootrandom(id_server = None, id_user = None):
 
 	finally:
 		return response
+
 """
 	Destroy all of a player's non-soulbound items.
 """
@@ -555,10 +554,6 @@ def item_loot(
 	except:
 		ewutils.logMsg("Failed to loot items from user {}".format(member.id))
 			
-
-
-
-
 
 def check_inv_capacity(id_user = None, id_server = None, item_type = None):
 	if id_user is not None and id_server is not None and item_type is not None:
@@ -829,6 +824,33 @@ async def item_look(cmd):
 			if hue != None:
 				response += " It's been dyed in {} paint.".format(hue.str_name)
 
+		if item.item_type == ewcfg.it_weapon:
+			response += "\n\n"
+
+			if item.item_props.get("married") != "":
+				player = EwPlayer(id_user = item.item_props.get("married"), id_server = server.id)
+
+				if item.item_props.get("married") != user_data.id_user or item.id_item != user_data.weapon:
+					response += "There's a barely legible engraving on the weapon that reads *{} :heart: {}*.\n\n".format(player.display_name, name)
+				else:
+					response += "Your beloved partner. You can't help but give it a little kiss on the handle.\n"
+
+			weapon = ewcfg.weapon_map.get(item.item_props.get("weapon_type"))
+
+			if ewcfg.weapon_class_ammo in weapon.classes:
+				response += "Ammo: {}/{}".format(item.item_props.get("ammo"), weapon.clip_size) + "\n"
+
+			totalkills = int(item.item_props.get("totalkills")) if item.item_props.get("totalkills") != None else 0
+
+			if totalkills < 10:
+				response += "It looks brand new" + (".\n" if totalkills == 0 else ", having only killed {} people.\n".format(totalkills))
+			elif totalkills < 100:
+				response += "There's some noticeable wear and tear on it. It has killed {} people.\n".format(totalkills)
+			else:
+				response += "A true legend in the battlefield, it has killed {} people.\n".format(totalkills)
+			
+			response += "You have killed {} people with it.".format(item.item_props.get("kills") if item.item_props.get("kills") != None else 0)			
+
 		response = name + "\n\n" + response
 
 		await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
@@ -907,6 +929,14 @@ def give_item(
 				id_item
 			)
 		)
+
+		item = EwItem(id_item = id_item)
+		# Reset the weapon's damage modifying stats
+		if item.item_type == ewcfg.it_weapon:
+			item.item_props["kills"] = 0
+			item.item_props["consecutive_hits"] = 0
+			item.item_props["time_lastattack"] = 0
+			item.persist()
 
 	return
 
@@ -1144,7 +1174,8 @@ def gen_item_props(item):
 			"weapon_type": item.id_weapon,
 			"weapon_name": "",
 			"weapon_desc": item.str_description,
-			"married": ""
+			"married": "",
+			"ammo": item.clip_size
 		}
 
 	elif item.item_type == ewcfg.it_cosmetic:

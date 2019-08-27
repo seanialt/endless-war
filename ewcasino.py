@@ -1050,21 +1050,14 @@ async def russian_roulette(cmd):
 
 	#Start game
 	if accepted == 1:
+		#Same team tax
+		tax = 1
+		if challengee.faction == challenger.faction:
+			tax = 0.5
 
 		for spin in range(1, 7):
 			challenger = EwUser(member = author)
 			challengee = EwUser(member = member)
-			
-			#In case any of the players suicide mid-game
-			if challenger.life_state == ewcfg.life_state_corpse:
-				response = "{} couldn't handle the pressure and killed themselves.".format(author.display_name).replace("@", "\{at\}")
-				await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(member, response))
-				break
-				
-			if challengee.life_state == ewcfg.life_state_corpse:
-				response = "{} couldn't handle the pressure and killed themselves.".format(member.display_name).replace("@", "\{at\}")
-				await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(author, response))
-				break
 				
 			#Challenger goes second
 			if spin % 2 == 0:
@@ -1088,36 +1081,24 @@ async def russian_roulette(cmd):
 					challenger = EwUser(member = author)
 					challengee = EwUser(member = member)
 					
-					if challengee.life_state != ewcfg.life_state_corpse:
-						challengee.change_slimes(n = challenger.slimes, source = ewcfg.source_killing)
-						ewitem.item_loot(member = author, id_user_target = member.id)
-						
-						challenger.id_killer = challenger.id_user
-						challenger.die(cause = ewcfg.cause_suicide)
-					#In case the other player killed themselves
-					else:
-						was_suicide = True
-						winner = author
-						response = "You shoot {}'s corpse, adding insult to injury.".format(member.display_name).replace("@", "\{at\}")
+					challengee.change_slimes(n = (challenger.slimes * tax), source = ewcfg.source_killing)
+					ewitem.item_loot(member = author, id_user_target = member.id)
+					
+					challenger.id_killer = challenger.id_user
+					challenger.die(cause = ewcfg.cause_suicide)
 
-				#Challangee dies
+				#Challengee dies
 				else:
 					winner = author
 
 					challenger = EwUser(member = author)
 					challengee = EwUser(member = member)
+					
+					challenger.change_slimes(n = (challengee.slimes * tax), source = ewcfg.source_killing)
+					ewitem.item_loot(member = member, id_user_target = author.id)
 
-					if challenger.life_state != ewcfg.life_state_corpse:					
-						challenger.change_slimes(n = challengee.slimes, source = ewcfg.source_killing)
-						ewitem.item_loot(member = member, id_user_target = author.id)
-
-						challengee.id_killer = challengee.id_user
-						challengee.die(cause = ewcfg.cause_suicide)
-					#In case the other player killed themselves
-					else:
-						was_suicide = True
-						winner = member
-						response = "You shoot {}'s corpse, adding insult to injury.".format(author.display_name).replace("@", "\{at\}")
+					challengee.id_killer = challengee.id_user
+					challengee.die(cause = ewcfg.cause_suicide)
 					
 				challenger.rr_challenger = ""
 				challengee.rr_challenger = ""
@@ -1129,21 +1110,13 @@ async def russian_roulette(cmd):
 
 				await ewrolemgr.updateRoles(client = cmd.client, member = author)
 				await ewrolemgr.updateRoles(client = cmd.client, member = member)
-
-				if was_suicide == False:
-					deathreport = "You arrive among the dead by your own volition. {}".format(ewcfg.emote_slimeskull)
-					deathreport = "{} ".format(ewcfg.emote_slimeskull) + ewutils.formatMessage(player, deathreport)
-
-					sewerchannel = ewutils.get_channel(cmd.message.server, ewcfg.channel_sewers)
-					await ewutils.send_message(cmd.client, sewerchannel, deathreport)
-
+				
 				break
 
 			#Or survives
 			else:
 				await ewutils.edit_message(cmd.client, res, ewutils.formatMessage(player, (response + " but it's empty")))
 				await asyncio.sleep(1)
-				#track spins?
 
 	#Or cancel the challenge
 	else:

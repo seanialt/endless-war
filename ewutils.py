@@ -11,14 +11,19 @@ import math
 
 import ewstats
 import ewitem
+import ewhunting
+import ewrolemgr
 
 import discord
 
 import ewcfg
+import ewwep
 from ew import EwUser
 from ewdistrict import EwDistrict
 from ewplayer import EwPlayer
+from ewhunting import EwEnemy
 from ewmarket import EwMarket
+from ewstatuseffects import EwStatusEffect
 
 TERMINATE = False
 
@@ -299,7 +304,16 @@ def databaseClose(conn_info):
 
 """ format responses with the username: """
 def formatMessage(user_target, message):
-	return "*{}*: {}".format(user_target.display_name, message).replace("@", "\{at\}")
+	# If the display name belongs to an unactivated raid boss, hide its name while it's counting down.
+	try:
+		if user_target.display_name in ewcfg.raid_boss_names and user_target.life_state == ewcfg.enemy_lifestate_unactivated:
+			return "{}".format(message)
+		else:
+			# Send messages normally if the raid boss is activated or if user_target is a player
+			return "*{}*: {}".format(user_target.display_name, message).replace("@", "\{at\}")
+	# If the user has the name of a raid boss, catch the exception and format the message correctly
+	except:
+		return "*{}*: {}".format(user_target.display_name, message).replace("@", "\{at\}")
 
 """ Decay slime totals for all users """
 def decaySlimes(id_server = None):
@@ -369,6 +383,7 @@ def decaySlimes(id_server = None):
 			# Clean up the database handles.
 			cursor.close()
 			databaseClose(conn_info)	
+			
 """
 	Coroutine that continually calls bleedSlimes; is called once per server, and not just once globally
 """
@@ -377,6 +392,7 @@ async def bleed_tick_loop(id_server):
 	# causes a capture tick to happen exactly every 10 seconds (the "elapsed" thing might be unnecessary, depending on how long capture_tick ends up taking on average)
 	while not TERMINATE:
 		await bleedSlimes(id_server = id_server)
+		await enemyBleedSlimes(id_server = id_server)
 		# ewutils.logMsg("Capture tick happened on server %s." % id_server + " Timestamp: %d" % int(time.time()))
 
 		await asyncio.sleep(interval)
@@ -385,6 +401,8 @@ async def bleed_tick_loop(id_server):
 async def bleedSlimes(id_server = None):
 	if id_server != None:
 		try:
+			client = get_client()
+			server = client.get_server(id_server)
 			conn_info = databaseConnect()
 			conn = conn_info.get('conn')
 			cursor = conn.cursor();
@@ -429,15 +447,64 @@ async def bleedSlimes(id_server = None):
 					district_data.persist()
 					total_bled += slimes_to_bleed
 
+				await ewrolemgr.updateRoles(client = client, member = server.get_member(user_data.id_user))
+
 			await resp_cont.post()
-
-
 
 			conn.commit()
 		finally:
 			# Clean up the database handles.
 			cursor.close()
 			databaseClose(conn_info)		
+
+""" Bleed slime for all enemies """
+async def enemyBleedSlimes(id_server = None):
+	if id_server != None:
+		try:
+			conn_info = databaseConnect()
+			conn = conn_info.get('conn')
+			cursor = conn.cursor();
+
+			cursor.execute("SELECT id_enemy FROM enemies WHERE id_server = %s AND {bleed_storage} > 1".format(
+				bleed_storage = ewcfg.col_enemy_bleed_storage
+			), (
+				id_server,
+			))
+
+			enemies = cursor.fetchall()
+			total_bled = 0
+			resp_cont = EwResponseContainer(id_server = id_server)
+			for enemy in enemies:
+				enemy_data = EwEnemy(id_enemy = enemy[0], id_server = id_server)
+				slimes_to_bleed = enemy_data.bleed_storage * (1 - .5 ** (ewcfg.bleed_tick_length / ewcfg.bleed_half_life))
+				slimes_to_bleed = max(slimes_to_bleed, ewcfg.bleed_tick_length * 1000)
+				slimes_to_bleed = min(slimes_to_bleed, enemy_data.bleed_storage)
+
+				district_data = EwDistrict(id_server = id_server, district = enemy_data.poi)
+
+				#round up or down, randomly weighted
+				remainder = slimes_to_bleed - int(slimes_to_bleed)
+				if random.random() < remainder:
+					slimes_to_bleed += 1
+				slimes_to_bleed = int(slimes_to_bleed)
+
+				if slimes_to_bleed >= 1:
+					enemy_data.bleed_storage -= slimes_to_bleed
+					enemy_data.change_slimes(n = - slimes_to_bleed, source = ewcfg.source_bleeding)
+					enemy_data.persist()
+					district_data.change_slimes(n = slimes_to_bleed, source = ewcfg.source_bleeding)
+					district_data.persist()
+					total_bled += slimes_to_bleed
+
+					if enemy_data.slimes <= 0:
+						ewhunting.delete_enemy(enemy_data)
+
+			await resp_cont.post()
+			conn.commit()
+		finally:
+			# Clean up the database handles.
+			cursor.close()
+			databaseClose(conn_info)
 
 """ Increase hunger for every player in the server. """
 def pushupServerHunger(id_server = None):
@@ -488,6 +555,130 @@ def pushdownServerInebriation(id_server = None):
 			# Clean up the database handles.
 			cursor.close()
 			databaseClose(conn_info)
+
+"""
+	Coroutine that continually calls burnSlimes; is called once per server, and not just once globally
+"""
+async def burn_tick_loop(id_server):
+	interval = ewcfg.burn_tick_length
+	while not TERMINATE:
+		await burnSlimes(id_server = id_server)
+		await asyncio.sleep(interval)
+
+""" Burn slime for all users """
+async def burnSlimes(id_server = None):
+	if id_server != None:
+		time_now = int(time.time())
+		client = get_client()
+		server = client.get_server(id_server)
+
+		results = {}
+
+		# Get users with burning effect
+		data = execute_sql_query("SELECT {id_user}, {value}, {source} from status_effects WHERE {id_status} = %s and {id_server} = %s".format(
+			id_user = ewcfg.col_id_user,
+			value = ewcfg.col_value,
+			id_status = ewcfg.col_id_status,
+			id_server = ewcfg.col_id_server,
+			source = ewcfg.col_source
+		), (
+			ewcfg.status_burning_id,
+			id_server
+		))
+
+		deathreport = ""
+		resp_cont = EwResponseContainer(id_server = id_server)
+		for result in data:
+			user_data = EwUser(id_user = result[0], id_server = id_server)
+
+			slimes_dropped = user_data.totaldamage + user_data.slimes
+
+			# Deal 10% of total slime to burn every second
+			slimes_to_burn = math.ceil(int(float(result[1])) * 0.1)
+
+			killer_data = EwUser(id_server = id_server, id_user=result[2])
+
+			# Damage stats
+			ewstats.change_stat(user = killer_data, metric = ewcfg.stat_lifetime_damagedealt, n = slimes_to_burn)
+
+			# Player died
+			if user_data.slimes - slimes_to_burn < 0:	
+				weapon = ewcfg.weapon_map.get(ewcfg.weapon_id_molotov)
+
+				player_data = EwPlayer(id_server = user_data.id_server, id_user = user_data.id_user)
+				killer = EwPlayer(id_server = id_server, id_user=killer_data.id_user)
+
+				# Kill stats
+				ewstats.increment_stat(user = killer_data, metric = ewcfg.stat_kills)
+				ewstats.track_maximum(user = killer_data, metric = ewcfg.stat_biggest_kill, value = int(slimes_dropped))
+
+				if killer_data.slimelevel > user_data.slimelevel:
+					ewstats.increment_stat(user = killer_data, metric = ewcfg.stat_lifetime_ganks)
+				elif killer_data.slimelevel < user_data.slimelevel:
+					ewstats.increment_stat(user = killer_data, metric = ewcfg.stat_lifetime_takedowns)
+
+				# Collect bounty
+				coinbounty = int(user_data.bounty / ewcfg.slimecoin_exchangerate)  # 100 slime per coin
+				
+				if user_data.slimes >= 0:
+					killer_data.change_slimecoin(n = coinbounty, coinsource = ewcfg.coinsource_bounty)
+
+				# Kill player
+				user_data.id_killer = killer_data.id_user
+				user_data.die(cause = ewcfg.cause_burning)
+				user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
+			
+				deathreport = "You were {} by {}. {}".format(weapon.str_killdescriptor, killer.display_name, ewcfg.emote_slimeskull)
+				deathreport = "{} ".format(ewcfg.emote_slimeskull) + formatMessage(server.get_member(user_data.id_user), deathreport)
+				resp_cont.add_channel_response(ewcfg.channel_sewers, deathreport)
+
+				user_data.trauma = weapon.id_weapon
+
+				await ewrolemgr.updateRoles(client = client, member = server.get_member(user_data.id_user))
+			else:
+				user_data.change_slimes(n = -slimes_to_burn, source = ewcfg.source_damage)
+				
+			user_data.persist()
+
+		await resp_cont.post()	
+
+async def remove_status_loop(id_server):
+	interval = ewcfg.removestatus_tick_length
+	while not TERMINATE:
+		await removeExpiredStatuses(id_server = id_server)
+		await asyncio.sleep(interval)
+
+""" Decay slime totals for all users """
+async def removeExpiredStatuses(id_server = None):
+	if id_server != None:
+		time_now = int(time.time())
+
+		client = get_client()
+		server = client.get_server(id_server)
+
+		users = execute_sql_query("SELECT id_user FROM users WHERE id_server = %s".format(
+		), (
+			id_server,
+		))
+
+		for user in users:
+			user_data = EwUser(id_user = user[0], id_server = id_server)
+			
+			statuses = user_data.getStatusEffects()
+
+			for status in statuses:
+				status_def = ewcfg.status_effects_def_map.get(status)
+				status_effect = EwStatusEffect(id_status=status, user_data=user_data)
+	
+				if status_def.time_expire > 0:
+					if status_effect.time_expire < time_now:
+						user_data.clear_status(id_status=status)
+
+				# Status that expire under special conditions
+				else:
+					if status == ewcfg.status_stunned_id:
+						if int(status_effect.value) < time_now:
+							user_data.clear_status(id_status=status)
 
 """ Parse a list of tokens and return an integer value. If allow_all, return -1 if the word 'all' is present. """
 def getIntToken(tokens = [], allow_all = False, negate = False):
@@ -875,6 +1066,44 @@ async def decrease_food_multiplier(id_user):
 	if id_user in food_multiplier:
 		food_multiplier[id_user] = max(0, food_multiplier.get(id_user) - 1)
 
+async def spawn_enemies(id_server = None):
+	if random.randrange(3) == 2:
+		resp_cont = EwResponseContainer(id_server=id_server)
+		response, channel = await ewhunting.spawn_enemy(id_server)
+
+		if response != "":
+			resp_cont.add_channel_response(channel, response)
+			await resp_cont.post()
+
+async def spawn_enemies_tick_loop(id_server):
+	interval = ewcfg.enemy_spawn_tick_length
+	# Causes the possibility of an enemy spawning every 10 seconds
+	while not TERMINATE:
+		await spawn_enemies(id_server = id_server)
+
+		await asyncio.sleep(interval)
+
+async def enemy_action_tick_loop(id_server):
+	interval = ewcfg.enemy_attack_tick_length
+	# Causes hostile enemies to attack every tick.
+	while not TERMINATE:
+		# resp_cont = EwResponseContainer(id_server=id_server)
+		await ewhunting.enemy_perform_action(id_server)
+
+		await asyncio.sleep(interval)
+
+# Clears out id_target in enemies with defender ai. Primarily used for when players die or leave districts the defender is in.
+def check_defender_targets(user_data, enemy_data):
+	defending_enemy = EwEnemy(id_enemy=enemy_data.id_enemy)
+	searched_user = EwUser(id_user=user_data.id_user, id_server=user_data.id_server)
+
+	if (defending_enemy.poi != searched_user.poi) or (searched_user.life_state == ewcfg.life_state_corpse):
+		defending_enemy.id_target = ""
+		defending_enemy.persist()
+		return False
+	else:
+		return True
+
 def get_move_speed(user_data):
 	mutations = user_data.get_mutations()
 	market_data = EwMarket(id_server = user_data.id_server)
@@ -894,3 +1123,92 @@ def get_move_speed(user_data):
 		move_speed *= 1.33
 
 	return move_speed
+
+""" Damage all players in a district """
+async def explode(damage = 0, district_data = None):
+	id_server = district_data.id_server
+	poi = district_data.name
+
+	client = get_client()
+	server = client.get_server(id_server)
+
+	resp_cont = EwResponseContainer(id_server = id_server)
+	response = ""
+	channel = ewcfg.id_to_poi.get(poi).channel
+
+	life_states = [ewcfg.life_state_juvenile, ewcfg.life_state_enlisted, ewcfg.life_state_executive]
+	users = district_data.get_players_in_district(life_states = life_states)
+
+	enemies = district_data.get_enemies_in_district()
+
+	# damage players
+	for user in users:
+		user_data = EwUser(id_user = user, id_server = id_server)
+		mutations = user_data.get_mutations()
+
+		if True:
+			player_data = EwPlayer(id_user = user_data.id_user)
+			response = "{} is blown back by the explosion’s sheer force! They lose {} slime!!".format(player_data.display_name, damage)
+			resp_cont.add_channel_response(channel, response)
+			slimes_damage = damage
+			if user_data.slimes < slimes_damage + user_data.bleed_storage:
+				# die in the explosion
+				district_data.change_slimes(n = user_data.slimes, source = ewcfg.source_killing)
+				district_data.persist()
+				slimes_dropped = user_data.totaldamage + user_data.slimes
+				explode_damage = slime_bylevel(user_data.slimelevel)
+
+				user_data.die(cause = ewcfg.cause_killing)
+				user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
+				user_data.persist()
+
+				response = "Alas, {} was caught too close to the blast. They are consumed by the flames, and die in the explosion.".format(player_data.display_name)
+				resp_cont.add_channel_response(channel, response)
+
+				if ewcfg.mutation_id_spontaneouscombustion in mutations:
+					sub_explosion = await explode(explode_damage, district_data)
+					resp_cont.add_response_container(sub_explosion)
+
+				await ewrolemgr.updateRoles(client = client, member = server.get_member(user_data.id_user))
+			else:
+				# survive
+				slime_splatter = 0.5 * slimes_damage
+				district_data.change_slimes(n = slime_splatter, source = ewcfg.source_killing)
+				district_data.persist()
+				slimes_damage -= slime_splatter
+				user_data.bleed_storage += slimes_damage
+				user_data.change_slimes(n = -slime_splatter, source = ewcfg.source_killing)
+				user_data.persist()
+
+	# damage enemies
+	for enemy in enemies:
+		enemy_data = EwEnemy(id_enemy = enemy, id_server = id_server)
+
+		if True:
+			response = "{} is blown back by the explosion’s sheer force! They lose {} slime!!".format(enemy_data.display_name, damage)
+			resp_cont.add_channel_response(channel, response)
+			slimes_damage = damage
+			if enemy_data.slimes < slimes_damage + enemy_data.bleed_storage:
+				# die in the explosion
+				district_data.change_slimes(n = enemy_data.slimes, source = ewcfg.source_killing)
+				district_data.persist()
+				# slimes_dropped = enemy_data.totaldamage + enemy_data.slimes
+				# explode_damage = ewutils.slime_bylevel(enemy_data.level)
+
+				response = "Alas, {} was caught too close to the blast. They are consumed by the flames, and die in the explosion.".format(enemy_data.display_name)
+				response += "\n\n" + ewhunting.drop_enemy_loot(enemy_data, district_data)
+				resp_cont.add_channel_response(channel, response)
+
+				enemy_data.life_state = ewcfg.enemy_lifestate_dead
+				enemy_data.persist()
+
+			else:
+				# survive
+				slime_splatter = 0.5 * slimes_damage
+				district_data.change_slimes(n = slime_splatter, source = ewcfg.source_killing)
+				district_data.persist()
+				slimes_damage -= slime_splatter
+				enemy_data.bleed_storage += slimes_damage
+				enemy_data.change_slimes(n = -slime_splatter, source = ewcfg.source_killing)
+				enemy_data.persist()
+	return resp_cont

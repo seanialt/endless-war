@@ -237,7 +237,7 @@ def gen_fish(x, cmd, has_fishingrod):
 			if ewcfg.fish_map[fish].catch_time != None:
 				fish_pool.remove(fish)
 
-	if cmd.message.channel.name in ["slimes-end-pier", "ferry"]:
+	if cmd.message.channel.name in ["slimes-end-pier", "assault-flats-beach-pier", "vagrants-corner-pier", "ferry"]:
 		for fish in fish_pool:
 			if ewcfg.fish_map[fish].slime == ewcfg.fish_slime_freshwater:
 				fish_pool.remove(fish)
@@ -639,12 +639,42 @@ async def reel(cmd):
 				if was_levelup:
 					response += levelup_response
 
+				market_data = EwMarket(id_server=user_data.id_server)
+				if market_data.caught_fish == ewcfg.debugfish_goal and fisher.pier in ewcfg.debugpiers:
+					
+					item = ewcfg.debugitem
+					
+					ewitem.item_create(
+						item_type=ewcfg.it_item,
+						id_user=user_data.id_user,
+						id_server=user_data.id_server,
+						item_props={
+							'id_item': item.id_item,
+							'context': item.context,
+							'item_name': item.str_name,
+							'item_desc': item.str_desc,
+						}
+					),
+					ewutils.logMsg('Created item: {}'.format(item.id_item))
+					item = EwItem(id_item=item.id_item)
+					item.persist()
+					
+					response += ewcfg.debugfish_response
+					market_data.caught_fish += 1
+					market_data.persist()
+		
+				elif market_data.caught_fish < ewcfg.debugfish_goal and fisher.pier in ewcfg.debugpiers:
+					market_data.caught_fish += 1
+					market_data.persist()
+
 				fisher.fishing = False
 				fisher.bite = False
 				fisher.current_fish = ""
 				fisher.current_size = ""
 				fisher.pier = ""
+				
 				user_data.persist()
+				
 	else:
 		response = "You cast your fishing rod unto a sidewalk. That is to say, you've accomplished nothing. Go to a pier if you want to fish."
 

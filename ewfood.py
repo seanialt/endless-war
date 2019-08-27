@@ -6,8 +6,10 @@ import ewcfg
 import ewitem
 import ewutils
 import ewrolemgr
+import ewstatuseffects
 from ew import EwUser
 from ewmarket import EwMarket, EwCompany, EwStock
+from ewitem import EwItem
 
 """ Food model object """
 class EwFood:
@@ -100,6 +102,7 @@ async def menu(cmd):
 				item_item = ewcfg.item_map.get(item_name)
 				food_item = ewcfg.food_map.get(item_name)
 				cosmetic_item = ewcfg.cosmetic_map.get(item_name)
+				weapon_item = ewcfg.weapon_map.get(item_name)
 
 				# increase profits for the stock market
 				stock_data = None
@@ -118,7 +121,10 @@ async def menu(cmd):
 				if cosmetic_item:
 					value = cosmetic_item.price
 
-				if stock_data is not None:
+				if weapon_item:
+					value = weapon_item.price
+
+				if stock_data != None:
 					value *= (stock_data.exchange_rate / ewcfg.default_stock_exchange_rate) ** 0.2
 
 				value = int(value)
@@ -139,10 +145,9 @@ async def order(cmd):
 	poi = ewcfg.id_to_poi.get(user_data.poi)
 	market_data = EwMarket(id_server = cmd.message.server.id)
 
-	if len(poi.vendors) == 0:
-		# Only allowed in locations with a vendor.
+	if poi == None or len(poi.vendors) == 0:
+		# Only allowed in the food court.
 		response = "There’s nothing to buy here. If you want to purchase some items, go to a sub-zone with a vendor in it, like the food court, the speakeasy, or the bazaar."
-
 	else:
 		value = ewutils.flattenTokenListToString(cmd.tokens[1:])
 		#if cmd.tokens_count > 1:
@@ -155,6 +160,7 @@ async def order(cmd):
 		item_type = ewcfg.it_item
 		if item != None:
 			item_id = item.id_item
+			name = item.str_name
 
 		# Finds the item if it's an EwFood item.
 		if item == None:
@@ -162,6 +168,7 @@ async def order(cmd):
 			item_type = ewcfg.it_food
 			if item != None:
 				item_id = item.id_food
+				name = item.str_name
 
 		# Finds the item if it's an EwCosmeticItem.
 		if item == None:
@@ -169,6 +176,14 @@ async def order(cmd):
 			item_type = ewcfg.it_cosmetic
 			if item != None:
 				item_id = item.id_cosmetic
+				name = item.str_name
+
+		if item == None:
+			item = ewcfg.weapon_map.get(value)
+			item_type = ewcfg.it_weapon
+			if item != None: 
+				item_id = item.id_weapon
+				name = item.str_weapon
 
 		if item != None:
 			item_type = item.item_type
@@ -211,7 +226,7 @@ async def order(cmd):
 
 				if value > user_data.slimes:
 					# Not enough money.
-					response = "A {} costs {:,} slime, and you only have {:,}.".format(item.str_name, value, user_data.slimes)
+					response = "A {} costs {:,} slime, and you only have {:,}.".format(name, value, user_data.slimes)
 				else:
 					if item_type == ewcfg.it_food:
 						food_items = ewitem.inventory(
@@ -225,6 +240,38 @@ async def order(cmd):
 							response = "You can't carry any more food than that."
 							return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 
+					elif item_type == ewcfg.it_weapon:
+						weapons_held = ewitem.inventory(
+							id_user = user_data.id_user,
+							id_server = cmd.message.server.id,
+							item_type_filter = ewcfg.it_weapon
+						)
+
+						has_weapon = False
+
+						# Thrown weapons are stackable
+						if ewcfg.weapon_class_thrown in item.classes:
+							# Check the player's inventory for the weapon and add amount to stack size. Create a new item the max stack size has been reached
+							for wep in weapons_held:
+								weapon = EwItem(id_item=wep.get("id_item"))
+								if weapon.item_props.get("weapon_type") == item.id_weapon and weapon.stack_size < weapon.stack_max:
+									has_weapon = True
+									weapon.stack_size += 1
+									weapon.persist()
+									response = "You slam {:,} slime down on the counter at {} for {}.".format(value, current_vendor, item.str_weapon)
+									user_data.change_slimes(n=-value, source=ewcfg.source_spending)
+									user_data.persist()
+									return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+						if has_weapon == False:
+							if len(weapons_held) >= user_data.get_weapon_capacity():
+								response = "You can't carry any more weapons."
+								return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+
+							elif user_data.life_state == ewcfg.life_state_corpse:
+								response = "Ghosts can't hold weapons."
+								return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 
 					user_data.change_slimes(n = -value, source = ewcfg.source_spending)
 
@@ -239,6 +286,8 @@ async def order(cmd):
 						item_type = item_type,
 						id_user = cmd.message.author.id,
 						id_server = cmd.message.server.id,
+						stack_max = 20 if item_type == ewcfg.it_weapon and ewcfg.weapon_class_thrown in item.classes else -1,
+						stack_size = 1 if item_type == ewcfg.it_weapon and ewcfg.weapon_class_thrown in item.classes else 0,
 						item_props = item_props
 					)
 

@@ -46,6 +46,8 @@ def init_stat_function_map():
 		ewcfg.stat_max_slimesfromkills: process_max_slimesfromkills,
 		ewcfg.stat_kills: process_kills,
 		ewcfg.stat_max_kills: process_max_kills,
+		ewcfg.stat_pve_kills: process_pve_kills,
+		ewcfg.stat_max_pve_kills: process_max_pve_kills,
 		ewcfg.stat_ghostbusts: process_ghostbusts,
 		ewcfg.stat_max_ghostbusts: process_max_ghostbusts,
 		ewcfg.stat_poudrins_looted: process_poudrins_looted,
@@ -105,3 +107,11 @@ def process_poudrins_looted(id_server = None, id_user = None, value = None):
 
 	ewstats.track_maximum(id_user = id_user, id_server = id_server, metric = ewcfg.stat_max_poudrins, value = poudrin_amount)
 	ewstats.change_stat(id_user = id_user, id_server = id_server, metric = ewcfg.stat_lifetime_poudrins, n = value)
+
+def process_pve_kills(id_server = None, id_user = None, value = None):
+	ewstats.track_maximum(id_server = id_server, id_user = id_user, metric = ewcfg.stat_max_pve_kills, value = value)
+	ewstats.increment_stat(id_server = id_server, id_user = id_user, metric = ewcfg.stat_lifetime_pve_kills)
+
+def process_max_pve_kills(id_server = None, id_user = None, value = None):
+	# TODO give apropriate medal
+	pass

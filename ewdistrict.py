@@ -154,6 +154,43 @@ class EwDistrict:
 
 		return filtered_players
 
+	def get_enemies_in_district(self,
+			min_level = 0,
+			max_level = math.inf,
+			min_slimes = -math.inf,
+			max_slimes = math.inf
+		):
+
+		client = ewutils.get_client()
+		server = client.get_server(self.id_server)
+		if server == None:
+			ewutils.logMsg("error: couldn't find server with id {}".format(self.id_server))
+			return []
+
+		enemies = ewutils.execute_sql_query("SELECT {id_enemy}, {slimes}, {level} FROM enemies WHERE id_server = %s AND {poi} = %s AND {life_state} = 1".format(
+			id_enemy = ewcfg.col_id_enemy,
+			slimes = ewcfg.col_enemy_slimes,
+			level = ewcfg.col_enemy_level,
+			poi = ewcfg.col_enemy_poi,
+			life_state = ewcfg.col_enemy_life_state
+		),(
+			self.id_server,
+			self.name
+		))
+
+		filtered_enemies = []
+		for enemy_data_column in enemies:
+
+			fetched_id_enemy = enemy_data_column[0] # data from id_enemy column in enemies table
+			fetched_slimes = enemy_data_column[1] # data from slimes column in enemies table
+			fetched_level = enemy_data_column[2] # data from level column in enemies table
+
+			# Append the enemy to the list if it meets the requirements
+			if max_level >= fetched_level >= min_level \
+			and max_slimes >= fetched_slimes >= min_slimes:
+				filtered_enemies.append(fetched_id_enemy)
+
+		return filtered_enemies
 
 	def decay_capture_points(self):
 		resp_cont_decay = ewutils.EwResponseContainer(client = ewutils.get_client(), id_server = self.id_server)
