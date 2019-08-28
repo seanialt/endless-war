@@ -526,6 +526,7 @@ cmd_teleport_player = cmd_prefix + 'tpp'
 cmd_quarterlyreport = cmd_prefix + 'quarterlyreport'
 cmd_piss = cmd_prefix + 'piss'
 
+cmd_promote = cmd_prefix + 'promote'
 cmd_arrest = cmd_prefix + 'arrest'
 cmd_restoreroles = cmd_prefix + 'restoreroles'
 cmd_debug1 = cmd_prefix + ewdebug.cmd_debug1
@@ -615,6 +616,7 @@ slimecoin_exchangerate = 100
 slimes_permill = 75000
 slimes_invein = 4000
 slimes_pertile = 50
+slimes_tomanifest = -100000
 
 # hunger
 min_stamina = 100
@@ -719,10 +721,10 @@ bleed_tick_length = 10
 enemy_spawn_tick_length = 60 * 5 # Five minutes
 
 # how often it takes for hostile enemies to attack
-enemy_attack_tick_length = 2
+enemy_attack_tick_length = 5
 
 # how often to burn
-burn_tick_length = 1
+burn_tick_length = 4
 
 # how often to check for statuses to be removed
 removestatus_tick_length = 5
@@ -1327,6 +1329,7 @@ stat_grenade_kills = 'grenade_kills'
 stat_garrote_kills = 'garrote_kills'
 stat_pickaxe_kills = 'pickaxe_kills'
 stat_fishingrod_kills = 'fishingrod_kills'
+stat_bass_kills = 'bass_kills'
 
 # Categories of events that change your slime total, for statistics tracking
 source_mining = 0
@@ -2040,7 +2043,11 @@ def wef_scythe(ctn = None):
 	ctn.slimes_damage = int(ctn.slimes_damage * 0.25)
 	user_mutations = ctn.user_data.get_mutations()
 
-	target_kills = ewstats.get_stat(user = ctn.shootee_data, metric = stat_kills)
+	try:
+		target_kills = ewstats.get_stat(user = ctn.shootee_data, metric = stat_kills)
+	except:
+		target_kills = 4
+
 	ctn.slimes_damage = ctn.slimes_damage * max(1, min(target_kills, 10))
 
 	# Decreased damage if attacking within less than two seconds after last attack
@@ -2052,7 +2059,7 @@ def wef_scythe(ctn = None):
 	aim = (random.randrange(10) + 1)
 
 	if aim <= (1 + (10 * ctn.miss_mod)):
-		if mutation_id_sharptoother in user_mutations():
+		if mutation_id_sharptoother in user_mutations:
 			if random.random() < 0.5:
 				ctn.miss = True
 		else:
@@ -2787,7 +2794,8 @@ weapon_list = [
 		str_duel = "**SMASHHH** {name_player} and {name_target} smash their bass together before admiring eachothers skillful basslines.",
 		fn_effect = wef_bass,
 		str_description = "It's a bass guitar. All of its strings are completely out of tune and rusted.",
-		acquisition = acquisition_smelting
+		acquisition = acquisition_smelting,
+		stat = stat_bass_kills
 	)
 ]
 
@@ -11314,10 +11322,12 @@ status_drunk_id = "drunk"
 status_ghostbust_id = "ghostbust"
 status_stunned_id = "stunned"
 
+time_expire_burn = 12
+
 status_effect_list = [
 	EwStatusEffectDef(
 		id_status = status_burning_id,
-		time_expire = 10,
+		time_expire = time_expire_burn,
 		str_acquire = '{name_player}\'s body is engulfed in flames.',
 		str_describe = 'They are burning.',
 		str_describe_self = 'You are burning.'

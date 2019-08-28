@@ -437,7 +437,7 @@ async def bleedSlimes(id_server = None):
 					user_data.change_slimes(n = - slimes_to_bleed, source = ewcfg.source_bleeding)
 					if user_data.slimes < 0:
 						user_data.die(cause = ewcfg.cause_bleeding)
-						user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
+						#user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
 						player_data = EwPlayer(id_server = user_data.id_server, id_user = user_data.id_user)
 						deathreport = "{skull} *{uname}*: You have succumbed to your wounds. {skull}".format(skull = ewcfg.emote_slimeskull, uname = player_data.display_name)
 						resp_cont.add_channel_response(ewcfg.channel_sewers, deathreport)
@@ -594,7 +594,7 @@ async def burnSlimes(id_server = None):
 			slimes_dropped = user_data.totaldamage + user_data.slimes
 
 			# Deal 10% of total slime to burn every second
-			slimes_to_burn = math.ceil(int(float(result[1])) * 0.1)
+			slimes_to_burn = math.ceil(int(float(result[1])) * ewcfg.burn_tick_length / ewcfg.time_expire_burn)
 
 			killer_data = EwUser(id_server = id_server, id_user=result[2])
 
@@ -626,7 +626,7 @@ async def burnSlimes(id_server = None):
 				# Kill player
 				user_data.id_killer = killer_data.id_user
 				user_data.die(cause = ewcfg.cause_burning)
-				user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
+				#user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
 			
 				deathreport = "You were {} by {}. {}".format(weapon.str_killdescriptor, killer.display_name, ewcfg.emote_slimeskull)
 				deathreport = "{} ".format(ewcfg.emote_slimeskull) + formatMessage(server.get_member(user_data.id_user), deathreport)
@@ -634,11 +634,12 @@ async def burnSlimes(id_server = None):
 
 				user_data.trauma = weapon.id_weapon
 
+				user_data.persist()
 				await ewrolemgr.updateRoles(client = client, member = server.get_member(user_data.id_user))
 			else:
 				user_data.change_slimes(n = -slimes_to_burn, source = ewcfg.source_damage)
+				user_data.persist()
 				
-			user_data.persist()
 
 		await resp_cont.post()	
 
@@ -1159,7 +1160,7 @@ async def explode(damage = 0, district_data = None):
 				explode_damage = slime_bylevel(user_data.slimelevel)
 
 				user_data.die(cause = ewcfg.cause_killing)
-				user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
+				#user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
 				user_data.persist()
 
 				response = "Alas, {} was caught too close to the blast. They are consumed by the flames, and die in the explosion.".format(player_data.display_name)
@@ -1212,3 +1213,7 @@ async def explode(damage = 0, district_data = None):
 				enemy_data.change_slimes(n = -slime_splatter, source = ewcfg.source_killing)
 				enemy_data.persist()
 	return resp_cont
+
+def is_otp(user_data):
+	return user_data.poi not in [ewcfg.poi_id_thesewers, ewcfg.poi_id_juviesrow, ewcfg.poi_id_copkilltown, ewcfg.poi_id_rowdyroughhouse]
+

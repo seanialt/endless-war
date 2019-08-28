@@ -656,7 +656,7 @@ def inaccessible(user_data = None, poi = None):
 		set(poi.factions).issubset(set(bans))
 	):
 		return True
-	elif poi.id_poi in locked_districts_list and (user_data.life_state != ewcfg.life_state_executive or user_data.life_state != ewcfg.life_state_lucky):
+	elif poi.id_poi in locked_districts_list and user_data.life_state not in [ewcfg.life_state_executive, ewcfg.life_state_lucky]:
 		return True
 	else:
 		return False
@@ -676,6 +676,7 @@ def retrieve_locked_districts(id_server):
 		locked_districts_list.append(district[0])
 		
 	return locked_districts_list
+
 
 
 """
@@ -771,6 +772,9 @@ async def move(cmd):
 	poi = ewcfg.id_to_poi.get(target_name)
 	movement_method = ""
 	
+	if poi == None:
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "Never heard of it."))
+
 	if user_data.poi == ewcfg.debugroom:
 		movement_method = "descending"
 		try:
@@ -785,9 +789,6 @@ async def move(cmd):
 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "You can't move forwards or backwards in an {}, bitch.".format(ewcfg.debugroom_short)))
 	elif user_data.poi != ewcfg.debugroom and cmd.tokens[0] == (ewcfg.cmd_descend):
 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "You can't move downwards on a solid surface, bitch."))
-
-	if poi == None:
-		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "Never heard of it."))
 
 	if poi.id_poi == user_data.poi:
 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, "You're already there, bitch."))
@@ -1216,6 +1217,10 @@ async def scout(cmd):
 	user_poi = ewcfg.id_to_poi.get(user_data.poi)
 	market_data = EwMarket(id_server = cmd.message.server.id)
 	mutations = user_data.get_mutations()
+
+	if user_data.life_state == ewcfg.life_state_corpse:
+		response = "Who cares? These meatbags all look the same to you."
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 
 	# if no arguments given, scout own location
 	if not len(cmd.tokens) > 1:

@@ -434,20 +434,18 @@ async def cast(cmd):
 				else:
 					damp = random.randrange(fun)
 					
-				timer = 0
-				while timer <= 60:
-					await asyncio.sleep(1)
-					user_data = EwUser(member = cmd.message.author)
+				await asyncio.sleep(60)
+				user_data = EwUser(member = cmd.message.author)
 
-					if user_data.poi != fisher.pier:
-						fisher.fishing = False
-						return
-					if user_data.life_state == ewcfg.life_state_corpse:
-						fisher.fishing = False
-						return
-					if fisher.fishing == False:
-						return
-					timer += 1
+				if user_data.poi != fisher.pier:
+					fisher.fishing = False
+					return
+				if user_data.life_state == ewcfg.life_state_corpse:
+					fisher.fishing = False
+					return
+				if fisher.fishing == False:
+					return
+
 				if damp > 10:
 					await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, random.choice(ewcfg.nobite_text)))
 					fun -= 2
