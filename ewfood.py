@@ -5,6 +5,7 @@ import asyncio
 import ewcfg
 import ewitem
 import ewutils
+import random
 import ewrolemgr
 import ewstatuseffects
 from ew import EwUser
@@ -51,6 +52,10 @@ class EwFood:
 	# The way that you can acquire this item. If blank, it's not relevant.
 	acquisition = ""
 
+	#Timestamp when an item was fridged.
+
+	time_fridged = 0
+
 	def __init__(
 		self,
 		id_food = "",
@@ -63,6 +68,7 @@ class EwFood:
 		inebriation = 0,
 		str_desc = "",
 		time_expir = 0,
+		time_fridged =0,
 		ingredients = "",
 		acquisition = "",
 	):
@@ -78,6 +84,7 @@ class EwFood:
 		self.inebriation = inebriation
 		self.str_desc = str_desc
 		self.time_expir = time_expir if time_expir > 0 else ewcfg.std_food_expir
+		self.time_fridged = time_fridged
 		self.ingredients = ingredients
 		self.acquisition = acquisition
 
@@ -102,7 +109,9 @@ async def menu(cmd):
 				item_item = ewcfg.item_map.get(item_name)
 				food_item = ewcfg.food_map.get(item_name)
 				cosmetic_item = ewcfg.cosmetic_map.get(item_name)
+				furniture_item = ewcfg.furniture_map.get(item_name)
 				weapon_item = ewcfg.weapon_map.get(item_name)
+
 
 				# increase profits for the stock market
 				stock_data = None
@@ -121,6 +130,9 @@ async def menu(cmd):
 				if cosmetic_item:
 					value = cosmetic_item.price
 
+				if furniture_item:
+					value = furniture_item.price
+
 				if weapon_item:
 					value = weapon_item.price
 
@@ -135,6 +147,20 @@ async def menu(cmd):
 					items.append(item_name)
 
 			response += "**{}**: *{}*\n".format(vendor, ewutils.formatNiceList(names = items))
+			if user_data.has_soul == 0:
+				if vendor == ewcfg.vendor_dojo:
+					response += "\n\nThe Dojo master looks at your soulless form with pity."
+				elif vendor == ewcfg.vendor_bar:
+					response += "\n\nThe bartender, sensing your misery, asks if you're okay."
+				elif vendor == ewcfg.vendor_diner:
+					response += "\n\nThe cook gives you a concerned look as he throws down another helping of flapjacks."
+				elif vendor == ewcfg.vendor_seafood:
+					response += "\n\nThe waiter sneers at how soulless and unkempt you look. You try to ignore him."
+				elif vendor == ewcfg.vendor_bazaar:
+					response += "\n\nAll the shops seem so lively. You wish you had a soul so you could be like them."
+				elif vendor == ewcfg.vendor_beachresort or vendor == ewcfg.vendor_countryclub:
+					response += "\n\nEverything looks so fancy here, but it doesn't really appeal to you since you don't have a soul."
+
 
 	# Send the response to the player.
 	await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
@@ -179,11 +205,19 @@ async def order(cmd):
 				name = item.str_name
 
 		if item == None:
+			item = ewcfg.furniture_map.get(value)
+			item_type = ewcfg.it_furniture
+			if item != None:
+				item_id = item.id_furniture
+				name = item.str_name
+
+		if item == None:
 			item = ewcfg.weapon_map.get(value)
 			item_type = ewcfg.it_weapon
 			if item != None: 
 				item_id = item.id_weapon
 				name = item.str_weapon
+
 
 		if item != None:
 			item_type = item.item_type
@@ -280,6 +314,9 @@ async def order(cmd):
 						company_data.persist()
 
 					item_props = ewitem.gen_item_props(item)
+
+					if item.str_name == "arcade cabinet":
+						item_props['furniture_desc'] = random.choice(ewcfg.cabinets_list)
 
 
 					ewitem.item_create(

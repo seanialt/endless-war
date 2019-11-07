@@ -450,7 +450,7 @@ async def cultivate(cmd):
 		)
 
 		
-		farm_action = ewcfg.cmd_to_farm_action.get(cmd.tokens[0])
+		farm_action = ewcfg.cmd_to_farm_action.get(cmd.tokens[0].lower())
 
 		if farm.time_lastsow == 0:
 			response = "You missed a step, you haven’t planted anything here yet."

@@ -14,6 +14,7 @@ import ewutils
 import ewmap
 import ewrolemgr
 import ewslimeoid
+import ewitem
 from ew import EwUser
 from ewmarket import EwMarket
 from ewslimeoid import EwSlimeoid
@@ -33,10 +34,10 @@ async def revive(cmd):
 			market_data = EwMarket(id_server = cmd.message.server.id)
 
 			# Endless War collects his fee.
-			fee = (player_data.slimecoin / 10)
-			player_data.change_slimecoin(n = -fee, coinsource = ewcfg.coinsource_revival)
-			market_data.slimes_revivefee += fee
-			player_data.busted = False
+			#fee = (player_data.slimecoin / 10)
+			#player_data.change_slimecoin(n = -fee, coinsource = ewcfg.coinsource_revival)
+			#market_data.slimes_revivefee += fee
+			#player_data.busted = False
 			
 			# Preserve negaslime
 			if player_data.slimes < 0:
@@ -68,12 +69,18 @@ async def revive(cmd):
 			for poi in ewcfg.capturable_districts:
 				district_data = EwDistrict(district = poi, id_server = cmd.message.server.id)
 
-
 				district_data.change_slimes(n = geyser_amount)
 				sewer_data.change_slimes(n = -1 * geyser_amount)
 
 				district_data.persist()
 				sewer_data.persist()
+
+			sewer_inv = ewitem.inventory(id_user=sewer_data.name, id_server=sewer_data.id_server)
+			for item in sewer_inv:
+				district = ewcfg.poi_id_slimesea
+				if random.random() < 0.5:
+					district = random.choice(ewcfg.capturable_districts)
+				ewitem.give_item(id_item=item.get("id_item"), id_user=district, id_server=sewer_data.id_server)
 
 			await ewrolemgr.updateRoles(client = cmd.client, member = cmd.message.author)
 
@@ -124,7 +131,7 @@ async def haunt(cmd):
 			response = "He is too far from the sewers in his ivory tower, and thus cannot be haunted."
 		elif (time_now - user_data.time_lasthaunt) < ewcfg.cd_haunt:
 			# Disallow haunting if the user has haunted too recently.
-			response = "You're being a little TOO spooky lately, don't you think?"
+			response = "You're being a little TOO spooky lately, don't you think? Try again in {} seconds.".format(int(ewcfg.cd_haunt-(time_now-user_data.time_lasthaunt)))
 		elif ewmap.channel_name_is_poi(cmd.message.channel.name) == False:
 			response = "You can't commit violence from here."
 		elif not ewutils.is_otp(haunted_data):
@@ -139,8 +146,9 @@ async def haunt(cmd):
 		elif haunted_data.life_state == ewcfg.life_state_enlisted or haunted_data.life_state == ewcfg.life_state_juvenile:
 			# Target can be haunted by the player.
 			haunted_slimes = int(haunted_data.slimes / ewcfg.slimes_hauntratio)
-			#if user_data.poi == haunted_data.poi:  # when haunting someone face to face, there is no cap and you get double the amount
-			#	haunted_slimes *= 2
+			# TODO: Comment this back in after Double Halloween
+			if user_data.poi == haunted_data.poi:  # when haunting someone face to face, there is no cap and you get double the amount
+				haunted_slimes *= 2
 			if haunted_slimes > ewcfg.slimes_hauntmax:
 				haunted_slimes = ewcfg.slimes_hauntmax
 

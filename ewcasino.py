@@ -958,9 +958,6 @@ async def baccarat(cmd):
 			response = "Specify how much SlimeCoin you will wager."
 			await ewutils.edit_message(cmd.client, resp, ewutils.formatMessage(cmd.message.author, response))
 
-def check(str):
-	if str.content.lower() == ewcfg.cmd_accept or str.content.lower() == ewcfg.cmd_refuse:
-		return True
 
 async def russian_roulette(cmd):
 	time_now = int(time.time())
@@ -1040,7 +1037,7 @@ async def russian_roulette(cmd):
 	#Wait for an answer
 	accepted = 0
 	try:
-		msg = await cmd.client.wait_for_message(timeout = 30, author = member, check = check)
+		msg = await cmd.client.wait_for_message(timeout = 30, author = member, check = ewutils.check_accept_or_refuse)
 
 		if msg != None:
 			if msg.content == "!accept":
@@ -2025,3 +2022,71 @@ async def skat_hand(cmd):
 """ Choose 1 or 2 cards to put back into the skat """
 async def skat_choose(cmd):
         return
+
+async def betsoul(cmd):
+	usermodel = EwUser(id_user=cmd.message.author.id, id_server=cmd.message.server.id)
+	user_inv = ewitem.inventory(id_user=cmd.message.author.id, id_server=cmd.message.server.id, item_type_filter=ewcfg.it_cosmetic)
+	if cmd.mentions_count == 1:
+		mention_target = cmd.mentions[0]
+	else:
+		mention_target = None
+
+	item_select = None
+
+	for item in user_inv:
+		item_object = ewitem.EwItem(item.get('id_item'))
+		if item_object.item_props.get('id_cosmetic') == "soul":
+			if not mention_target:
+				item_select = item_object
+				break
+			elif mention_target.id == item_object.item_props.get('user_id'):
+				item_select = item_object
+				break
+
+	if usermodel.poi != ewcfg.poi_id_thecasino:
+		response = "If you want to exchange your soul for SlimeCoin you have to be in the casino first."
+	elif mention_target and item_select == None:
+		response = "Sorry, you don't have that soul."
+	elif item_select == None:
+		response = "You don't have any souls in your inventory. !extractsoul if you want to do this properly."
+	else:
+		ewitem.give_item(id_user="casinosouls", id_server=cmd.message.server.id, id_item=item_select.id_item)
+		usermodel.change_slimecoin(coinsource=ewcfg.coinsource_spending, n=ewcfg.soulprice) #current price for souls is 500 mil slimecoin
+		usermodel.persist()
+		response = "You hand over {} for {:,} slimecoin.".format(item_select.item_props.get('cosmetic_name'), ewcfg.soulprice)
+	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+async def buysoul(cmd):
+	usermodel = EwUser(id_user=cmd.message.author.id, id_server=cmd.message.server.id)
+	casino_inv = ewitem.inventory(id_user="casinosouls", id_server=cmd.message.server.id, item_type_filter=ewcfg.it_cosmetic)
+
+	if cmd.mentions_count == 1:
+		mention_target = cmd.mentions[0]
+	else:
+		mention_target = None
+
+	selected_item = None
+	for item_sought in casino_inv:
+		item_object = ewitem.EwItem(item_sought.get('id_item'))
+		selected_item = item_object
+		if item_object.item_props.get('user_id') == cmd.message.author.id:
+			if not mention_target:
+				break
+		if mention_target:
+			if mention_target.id == item_object.item_props.get('user_id'):
+				break
+
+	if usermodel.poi != ewcfg.poi_id_thecasino:
+		response = "If you want to buy people's souls you have to be in the casino first."
+	elif mention_target and selected_item == None:
+		response = "That soul isn't available. Go torment someone else."
+	elif selected_item == None:
+		response = "Sorry, no souls on the market today."
+	elif usermodel.slimecoin < ewcfg.soulprice:
+		response = "Tough luck. You can't afford a soul. Poor you."
+	else:
+		ewitem.give_item(id_user=cmd.message.author.id, id_server=cmd.message.server.id, id_item=selected_item.id_item)
+		usermodel.change_slimecoin(coinsource=ewcfg.coinsource_spending, n= -ewcfg.soulprice)  # current price for souls is 500 mil slimecoin
+		usermodel.persist()
+		response = "You buy {} off the casino. This will be fun.".format(selected_item.item_props.get('cosmetic_name'))
+	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))

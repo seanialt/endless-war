@@ -6,6 +6,7 @@ import discord
 import ewcfg
 import ewstats
 import ewutils
+import ew
 
 class EwQuadrantFlavor:
 	id_quadrant = ""
@@ -141,6 +142,7 @@ async def add_quadrant(cmd):
 	response = ""
 	author = cmd.message.author
 	quadrant = None
+	user_data = ew.EwUser(id_user=author.id, id_server=author.server.id)
 
 	for token in cmd.tokens[1:]:
 		if token.lower() in ewcfg.quadrants_map:
@@ -154,6 +156,10 @@ async def add_quadrant(cmd):
 
 	if cmd.mentions_count == 0:
 		response = "Please select a target for your romantic feelings."
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+	if user_data.has_soul == 0:
+		response = "A soulless juvie can only desperately reach for companionship, they will never find it."
 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 
 	target = cmd.mentions[0].id
@@ -203,6 +209,14 @@ async def get_quadrants(cmd):
 			response = response.format("Their")
 		else:
 			response = response.format("Your")
+
+	user_data = ew.EwUser(id_user=member.id, id_server=member.server.id)
+	if user_data.has_soul == 0:
+		response = "{} can't truly form any bonds without {} soul."
+		if cmd.mentions_count > 0:
+			response = response.format("They", "their")
+		else:
+			response = response.format("You", "your")
 
 	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 

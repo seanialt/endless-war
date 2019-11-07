@@ -69,10 +69,11 @@ print("<header><h2>{faction}<a href=player.html?pl={id_user}>{display_name}</a><
 # Main body
 print("<div>")
 
-print("<p>{}</p>".format(cgi.escape(ewcmd.gen_data_text(
+print("<p>{}</p>".format(cgi.escape("".join(ewcmd.gen_data_text(
 	id_user = id_user,
 	id_server = id_server,
 	display_name = player.display_name
+).channel_responses.get(None)
 ))))
 
 print("<h3>Statistics</h3>")

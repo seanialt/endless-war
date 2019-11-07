@@ -28,7 +28,6 @@ async def pardon(cmd):
 		else:
 			member_data = EwUser(member = member)
 			member_data.unban(faction = user_data.faction)
-			member_data.arrested = False
 
 			if member_data.faction == "":
 				response = "{} has been allowed to join the {} again.".format(member.display_name, user_data.faction)
@@ -39,7 +38,7 @@ async def pardon(cmd):
 				if member_data.life_state == ewcfg.life_state_enlisted:
 					member_data.life_state = ewcfg.life_state_juvenile
 
-				response = "{} has been released from his association with the {}.".format(member.display_name, faction_old)
+				response = "{} has been released from their association with the {}.".format(member.display_name, faction_old)
 			member_data.persist()
 			await ewrolemgr.updateRoles(client = cmd.client, member = member)
 
@@ -62,6 +61,7 @@ async def banish(cmd):
 		else:
 			member_data = EwUser(member = member)
 			member_data.ban(faction = user_data.faction)
+			member_data.unvouch(faction = user_data.faction)
 
 			if member_data.faction == user_data.faction:
 				member_data.faction = ""
@@ -133,4 +133,39 @@ async def create(cmd):
 	ewitem.soulbind(new_item_id)
 
 	response = 'Item "{}" successfully created.'.format(item_name)
+	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+"""
+	Command that grants someone a specific cosmetic
+"""
+async def exalt(cmd):
+	author = cmd.message.author
+	user_data = EwUser(member=author)
+
+	if not author.server_permissions.administrator and user_data.life_state != ewcfg.life_state_kingpin:
+		response = "You do not have the power within you worthy of !exalting another player."
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+	
+	
+	if cmd.mentions[0]:
+		recipient = cmd.mentions[0]
+	else:
+		response = 'You need to specify a recipient. Usage: !exalt @[recipient].'
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+	
+	medallion = ewcfg.medallion_results[0]
+	medallion_props = ewitem.gen_item_props(medallion)
+
+	medallion_id = ewitem.item_create(
+		item_type=medallion.item_type,
+		id_user=recipient.id,
+		id_server=cmd.message.server.id,
+		item_props=medallion_props
+	)
+
+	# Soulbind the medallion. A player can get at most twice, but later on a new command could be added to destroy them/trade them in.
+	# I imagine this would be something similar to how players can destroy Australium Wrenches in TF2, which broadcasts a message to everyone in the game, or something.
+	ewitem.soulbind(medallion_id)
+
+	response = "**{} has been gifted the Double Halloween Medallion!!**\n".format(recipient.display_name)
 	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))

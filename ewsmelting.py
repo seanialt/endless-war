@@ -151,7 +151,11 @@ async def smelt(cmd):
 								pass
 							else:
 								possible_results.append(result)
-
+						if hasattr(result, 'id_furniture'):
+							if result.id_furniture not in found_recipe.products:
+								pass
+							else:
+								possible_results.append(result)
 					# If there are multiple possible products, randomly select one.
 					item = random.choice(possible_results)
 

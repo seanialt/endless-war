@@ -57,14 +57,20 @@ class EwStatusEffect:
 	def __init__(
 		self,
 		id_status = None,
-        user_data = None,
+		user_data = None,
 		time_expire = 0,
 		value = 0,
-		source = ""
+		source = "",
+		id_user = None,
+		id_server = None
 	):
-		if id_status != None and user_data != None:
-			self.id_server = user_data.id_server
-			self.id_user = user_data.id_user
+		if user_data != None:
+			id_user = user_data.id_user
+			id_server = user_data.id_server
+
+		if id_status != None and id_user != None and id_server != None:
+			self.id_server = id_server
+			self.id_user = id_user
 			self.id_status = id_status
 			self.time_expire = time_expire
 			self.value = value
@@ -152,3 +158,4 @@ class EwStatusEffect:
 			# Clean up the database handles.
 			cursor.close()
 			ewutils.databaseClose(conn_info)
+

@@ -27,7 +27,7 @@ CREATE TABLE users (
 	bounty bigint NOT NULL DEFAULT '0',
 	inebriation int NOT NULL DEFAULT '0',
 	faction varchar(32) NOT NULL default '',
-	poi varchar(64) NOT NULL default 'downtown',
+	poi varchar(64) NOT NULL default 'classroom',
 	life_state int NOT NULL DEFAULT '1',
 	busted int NOT NULL DEFAULT '0',
 	rr_challenger_id varchar(128) NOT NULL DEFAULT '',
@@ -42,6 +42,13 @@ CREATE TABLE users (
 	donated_slimes bigint NOT NULL DEFAULT '0',
 	donated_poudrins bigint NOT NULL DEFAULT '0',
 	arrested int NOT NULL DEFAULT '0',
+	apt_zone varchar(64) NOT NULL default 'empty',
+	visiting varchar(64) NOT NULL default 'empty',
+	splattered_slimes bigint NOT NULL DEFAULT '0',
+	time_expirpvp int NOT NULL DEFAULT '0',
+	time_lastenlist int NOT NULL DEFAULT '0',
+	active_slimeoid int NOT NULL DEFAULT '-1',
+	has_soul int NOT NULL DEFAULT '1',
 
 	CONSTRAINT id_user_server PRIMARY KEY (id_user, id_server)
 );
@@ -67,6 +74,9 @@ CREATE TABLE markets (
 	donated_slimes bigint NOT NULL DEFAULT '0',
 	donated_poudrins bigint NOT NULL DEFAULT '0',
 	caught_fish int NOT NULL DEFAULT '0',
+	splattered_slimes bigint NOT NULL DEFAULT '0',
+	horseman_deaths int NOT NULL DEFAULT '0',
+	horseman_timeofdeath bigint NOT NULL DEFAULT '0',
 
 	PRIMARY KEY (id_server)
 );
@@ -193,27 +203,27 @@ CREATE TABLE slimeoids (
 );
 
 CREATE TABLE enemies (
-    id_enemy int NOT NULL AUTO_INCREMENT,
-    id_server varchar(128) NOT NULL,
-    slimes bigint NOT NULL DEFAULT '0',
-    totaldamage bigint NOT NULL DEFAULT '0',
-    ai varchar(32) NOT NULL DEFAULT '',
-    enemytype varchar(32) NOT NULL DEFAULT '',
-    attacktype varchar(32) NOT NULL DEFAULT '',
-    display_name varchar(32) NOT NULL DEFAULT '',
-    identifier varchar(32) NOT NULL DEFAULT '',
-    level int NOT NULL DEFAULT '0',
-    poi varchar(64) NOT NULL DEFAULT '',
-    life_state int NOT NULL DEFAULT '0',
-    bleed_storage bigint NOT NULL DEFAULT '0',
-    time_lastenter int NOT NULL DEFAULT '0',
-    initialslimes bigint NOT NULL DEFAULT '0',
-    lifetime bigint NOT NULL DEFAULT '0',
-    id_target varchar(128) NOT NULL DEFAULT '',
-    raidtimer bigint NOT NULL DEFAULT '0',
-    rare_status int NOT NULL DEFAULT '0',
+	id_enemy int NOT NULL AUTO_INCREMENT,
+	id_server varchar(128) NOT NULL,
+	slimes bigint NOT NULL DEFAULT '0',
+	totaldamage bigint NOT NULL DEFAULT '0',
+	ai varchar(32) NOT NULL DEFAULT '',
+	enemytype varchar(32) NOT NULL DEFAULT '',
+	attacktype varchar(32) NOT NULL DEFAULT '',
+	display_name varchar(256) NOT NULL DEFAULT '',
+	identifier varchar(32) NOT NULL DEFAULT '',
+	level int NOT NULL DEFAULT '0',
+	poi varchar(64) NOT NULL DEFAULT '',
+	life_state int NOT NULL DEFAULT '0',
+	bleed_storage bigint NOT NULL DEFAULT '0',
+	time_lastenter int NOT NULL DEFAULT '0',
+	initialslimes bigint NOT NULL DEFAULT '0',
+	lifetime bigint NOT NULL DEFAULT '0',
+	id_target varchar(128) NOT NULL DEFAULT '',
+	raidtimer bigint NOT NULL DEFAULT '0',
+	rare_status int NOT NULL DEFAULT '0',
 
-    PRIMARY KEY (id_enemy)
+	PRIMARY KEY (id_enemy)
 );
 
 CREATE TABLE districts (
@@ -306,10 +316,62 @@ CREATE TABLE offers (
 	PRIMARY KEY (id_server, id_user, offer_give)
 );
 
+CREATE TABLE vouchers (
+	id_server varchar(128) NOT NULL,
+	id_user varchar(128) NOT NULL,
+	faction varchar(32) NOT NULL DEFAULT '',
+
+	PRIMARY KEY (id_server, id_user, faction)
+);
+	
+
+CREATE TABLE apartment (
+	apt_name varchar(64) NOT NULL DEFAULT '',
+	apt_description varchar(5000) NOT NULL DEFAULT '',
+	poi varchar(64) NOT NULL DEFAULT 'downtown',
+	rent BIGINT NOT NULL DEFAULT 0,
+	id_user varchar(64) NOT NULL DEFAULT '',
+	id_server varchar(64) NOT NULL DEFAULT '',
+	apt_class char NOT NULL DEFAULT 'c',
+
+	PRIMARY KEY (id_server, id_user)
+);
+
 CREATE TABLE global_locks (
-    id_server varchar(128) NOT NULL,
+	id_server varchar(128) NOT NULL,
 	district varchar(32) NOT NULL,
 	locked_status varchar(32) NOT NULL DEFAULT '',
 
 	PRIMARY KEY (id_server, district)
+);
+
+CREATE TABLE world_events (
+	id_event int NOT NULL AUTO_INCREMENT,
+	id_server varchar(128) NOT NULL,
+	event_type varchar(64) NOT NULL,
+	time_activate int NOT NULL DEFAULT '-1',
+	time_expir int NOT NULL DEFAULT '-1',
+
+	PRIMARY KEY (id_event)
+);
+
+CREATE TABLE world_events_prop (
+	id_event int NOT NULL,
+
+	name varchar(64) NOT NULL,
+	value varchar(2048),
+
+	FOREIGN KEY (id_event)
+		REFERENCES world_events(id_event)
+		ON DELETE CASCADE
+);
+
+CREATE TABLE ads (
+	id_ad int NOT NULL AUTO_INCREMENT,
+	id_server varchar(128) NOT NULL,
+	id_sponsor varchar(128) NOT NULL DEFAULT '',
+	content varchar(500) NOT NULL DEFAULT '',
+	time_expir int NOT NULL DEFAULT '0',
+
+	PRIMARY KEY (id_ad)
 );

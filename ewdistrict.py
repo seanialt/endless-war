@@ -116,7 +116,7 @@ class EwDistrict:
 		for neighbor_id in neighbors:
 			neighbor_poi = ewcfg.id_to_poi.get(neighbor_id)
 			neighbor_data = EwDistrict(id_server = self.id_server, district = neighbor_id)
-			if neighbor_data.controlling_faction != self.controlling_faction and not neighbor_poi.is_subzone:
+			if neighbor_data.controlling_faction != self.controlling_faction and not neighbor_poi.is_subzone and not neighbor_poi.is_outskirts:
 				return False
 		return True
 

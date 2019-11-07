@@ -8,7 +8,6 @@ import ewitem
 from ewmarket import EwMarket
 from ew import EwUser
 from ewitem import EwItem
-from ewcasino import check
 
 class EwFisher:
 	fishing = False
@@ -510,24 +509,38 @@ async def reel(cmd):
 		# On successful reel.
 		else:
 			if fisher.current_fish == "item":
-				item = random.choice(ewcfg.mine_results)
+				
+				slimesea_inventory = ewitem.inventory(id_server = cmd.message.server.id, id_user = ewcfg.poi_id_slimesea)
+				
+				pier_poi = ewcfg.id_to_poi.get(fisher.pier)				
 
-				unearthed_item_amount = 1 if random.randint(1, 3) != 1 else 2  # 33% chance of extra drop
+				if pier_poi.pier_type != ewcfg.fish_slime_saltwater or len(slimesea_inventory) == 0 or random.random() < 0.5:
 
-				item_props = ewitem.gen_item_props(item)
+					item = random.choice(ewcfg.mine_results)
+				
+					unearthed_item_amount = 1 if random.randint(1, 3) != 1 else 2  # 33% chance of extra drop
 
-				for creation in range(unearthed_item_amount):
-					ewitem.item_create(
-						item_type = item.item_type,
-						id_user = cmd.message.author.id,
-						id_server = cmd.message.server.id,
-						item_props = item_props
-					),
+					item_props = ewitem.gen_item_props(item)
 
-				if unearthed_item_amount == 1:
-					response = "You reel in a {}!".format(item.str_name)
+					for creation in range(unearthed_item_amount):
+						ewitem.item_create(
+							item_type = item.item_type,
+							id_user = cmd.message.author.id,
+							id_server = cmd.message.server.id,
+							item_props = item_props
+						)
+
+					if unearthed_item_amount == 1:
+						response = "You reel in a {}!".format(item.str_name)
+					else:
+						response = "You reel in two {}s!".format(item.str_name)
+
 				else:
-					response = "You reel in two {}s!".format(item.str_name)
+					item = random.choice(slimesea_inventory)
+
+					ewitem.give_item(id_item = item.get('id_item'), member = cmd.message.author)
+
+					response = "You reel in a {}!".format(item.get('name'))
 
 				fisher.fishing = False
 				fisher.bite = False
@@ -615,6 +628,7 @@ async def reel(cmd):
 						'rarity': ewcfg.fish_map[fisher.current_fish].rarity,
 						'size': fisher.current_size,
 						'time_expir': time.time() + ewcfg.std_food_expir,
+						'time_fridged': 0,
 						'acquisition': ewcfg.acquisition_fishing,
 						'value': value
 					}
@@ -914,7 +928,7 @@ async def barter(cmd):
 				accepted = False
 
 				try:
-					message = await cmd.client.wait_for_message(timeout = 20, author = cmd.message.author, check = check)
+					message = await cmd.client.wait_for_message(timeout = 20, author = cmd.message.author, check = ewutils.check_accept_or_refuse)
 
 					if message != None:
 						if message.content.lower() == "!accept":

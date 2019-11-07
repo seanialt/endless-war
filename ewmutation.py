@@ -211,7 +211,7 @@ async def clear_mutations(cmd):
 		response = "You need a slime poudrin to replace a mutation."
 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 	else:
-		ewitem.item_delete(id_item = poudrin[0].get('id_item'))  # Remove Poudrins
+		ewitem.item_delete(id_item = poudrin.get('id_item'))  # Remove Poudrins
 		market_data.donated_poudrins += 1
 		market_data.persist()
 		user_data.poudrin_donations += 1
