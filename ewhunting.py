@@ -819,10 +819,11 @@ async def enemy_perform_action(id_server):
 	#ewutils.logMsg("time spent on performing enemy actions: {}".format(time_end - time_start))
 
 # Spawns an enemy in a randomized outskirt district. If a district is full, it will try again, up to 5 times.
-async def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
+def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
 	time_now = int(time.time())
 	response = ""
 	ch_name = ""
+	resp_cont = ewutils.EwResponseContainer(id_server = id_server)
 	chosen_poi = ""
 	threat_level = ""
 	boss_choices = []
@@ -889,7 +890,7 @@ async def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
 
 	# If it couldn't find a district in 5 tries or less, back out of spawning that enemy.
 	if chosen_poi == "":
-		return
+		return resp_cont
 	
 	# Recursively spawn enemies that belong to groups.
 	if enemytype in ewcfg.enemy_group_leaders:
@@ -906,13 +907,10 @@ async def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
 			while sub_enemy_spawning_count < sub_enemy_spawning_max:
 				
 				sub_enemy_spawning_count += 1
-				resp_cont = ewutils.EwResponseContainer(id_server=id_server)
 				
-				sub_response, channel = await spawn_enemy(id_server=id_server, pre_chosen_type=sub_enemy_type, pre_chosen_poi = chosen_poi)
+				sub_resp_cont = spawn_enemy(id_server=id_server, pre_chosen_type=sub_enemy_type, pre_chosen_poi = chosen_poi)
 
-				if sub_response != "":
-					resp_cont.add_channel_response(channel, sub_response)
-					await resp_cont.post()
+				resp_cont.add_response_container(sub_resp_cont)
 
 	if enemytype != None:
 		enemy = get_enemy_data(enemytype)
@@ -938,7 +936,7 @@ async def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
 			
 			# TODO: Remove after Double Halloween
 			if enemytype == ewcfg.enemy_type_doubleheadlessdoublehorseman:
-				response = "***BEHOLD!!!***  The {} has arrvied to challenge thee! He is of {} slime, and {} in level. Happy Double Halloween, you knuckleheads!".format(enemy.display_name, enemy.slimes, enemy.level)
+				response = "***BEHOLD!!!***  The {} has arrived to challenge thee! He is of {} slime, and {} in level. Happy Double Halloween, you knuckleheads!".format(enemy.display_name, enemy.slimes, enemy.level)
 				
 				if market_data.horseman_deaths >= 1:
 					response += "\n***BACK SO SOON, MORTALS? I'M JUST GETTING WARMED UP, BAHAHAHAHAHAHA!!!***"
@@ -948,7 +946,10 @@ async def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
 		
 		ch_name = ewcfg.id_to_poi.get(enemy.poi).channel
 
-	return response, ch_name
+	if len(response) > 0 and len(ch_name) > 0:
+		resp_cont.add_channel_response(ch_name, response)
+
+	return resp_cont
 
 # Finds an enemy based on its regular/shorthand name, or its ID.
 def find_enemy(enemy_search=None, user_data=None):

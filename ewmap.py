@@ -1089,12 +1089,9 @@ async def move(cmd = None, isApt = False):
 							# print(enemies_count)
 							
 							if enemies_count == 0 and market_data.horseman_deaths <= 1 and spawn_ready:
-								dh_resp_cont = ewutils.EwResponseContainer(id_server=user_data.id_server)
-								sub_response, sub_channel = await spawn_enemy(id_server=user_data.id_server, pre_chosen_type=ewcfg.enemy_type_doubleheadlessdoublehorseman, pre_chosen_poi=ewcfg.poi_id_underworld)
+								dh_resp_cont = spawn_enemy(id_server=user_data.id_server, pre_chosen_type=ewcfg.enemy_type_doubleheadlessdoublehorseman, pre_chosen_poi=ewcfg.poi_id_underworld)
 	
-								if sub_response != "":
-									dh_resp_cont.add_channel_response(sub_channel, sub_response)
-									await dh_resp_cont.post()
+								await dh_resp_cont.post()
 
 					if len(user_data.faction) > 0 and user_data.poi in ewcfg.capturable_districts:
 						district = EwDistrict(

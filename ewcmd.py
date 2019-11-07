@@ -692,11 +692,14 @@ async def accept(cmd):
 			challenger.rr_challenger = user.id_user
 			challenger.persist()
 			slimeoid_data = EwSlimeoid(member = cmd.message.author)
+			response = ""
 			if cmd.message.channel.name == ewcfg.channel_arena and ewslimeoid.active_slimeoidbattles.get(slimeoid_data.id_slimeoid):
 				response = "You accept the challenge! Both of your Slimeoids ready themselves for combat!"
 			elif cmd.message.channel.name == ewcfg.channel_casino:
 				response = "You accept the challenge! Both of you head out back behind the casino and load a bullet into the gun."
-			await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+			if len(response) > 0:
+				await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 
 
 """ Refuse a russian roulette challenge """

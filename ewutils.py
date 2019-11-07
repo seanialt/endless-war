@@ -1093,12 +1093,9 @@ async def decrease_food_multiplier(id_user):
 
 async def spawn_enemies(id_server = None):
 	if random.randrange(3) == 0:
-		resp_cont = EwResponseContainer(id_server=id_server)
-		response, channel = await ewhunting.spawn_enemy(id_server)
+		resp_cont = ewhunting.spawn_enemy(id_server)
 
-		if response != "":
-			resp_cont.add_channel_response(channel, response)
-			await resp_cont.post()
+		await resp_cont.post()
 
 async def spawn_enemies_tick_loop(id_server):
 	interval = ewcfg.enemy_spawn_tick_length
