@@ -25,7 +25,7 @@ from ewdungeons import EwDungeonScene
 import ewdebug
 
 # Global configuration options.
-version = "v3.11hwx2"
+version = "v3.13"
 
 dir_msgqueue = 'msgqueue'
 
@@ -38,10 +38,14 @@ update_pvp = 60
 update_market = 900 #15 min
 
 # Time saved moving through friendly territory (or lost in hostile territory).
-territory_time_gain = 5
+territory_time_gain = 10
 
 # Market delta
 max_iw_swing = 30
+
+# combatant ids to differentiate players and NPCs in combat
+combatant_type_player = "player"
+combatant_type_enemy = "enemy"
 
 # Life states. How the player is living (or deading) in the database
 life_state_corpse = 0
@@ -81,8 +85,7 @@ poi_id_thesewers = "thesewers"
 poi_id_slimeoidlab = "slimecorpslimeoidlaboratory"
 poi_id_realestate = "realestateagency"
 poi_id_glocksburycomics = "glocksburycomics"
-poi_id_rpcity = "rpcity"
-poi_id_underworld = "underworld"
+poi_id_slimypersuits = "slimypersuits"
 poi_id_mine = "themines"
 poi_id_thecasino = "thecasino"
 poi_id_711 = "outsidethe711"
@@ -650,7 +653,6 @@ cmd_dyecosmetic_alt1 = cmd_prefix + 'dyehat'
 cmd_dyecosmetic_alt2 = cmd_prefix + 'saturatecosmetic'
 cmd_dyecosmetic_alt3 = cmd_prefix + 'saturatehat'
 cmd_create = cmd_prefix + 'create'
-cmd_exalt = cmd_prefix + 'exalt'
 cmd_give = cmd_prefix + 'give'
 cmd_discard = cmd_prefix + 'discard'
 cmd_discard_alt1 = cmd_prefix + 'drop'
@@ -661,15 +663,26 @@ cmd_divorce = cmd_prefix + 'divorce'
 cmd_scavenge = cmd_prefix + 'scavenge'
 cmd_arm = cmd_prefix + 'arm'
 cmd_arsenalize = cmd_prefix + 'arsenalize'
+cmd_annex = cmd_prefix + 'annex'
 cmd_capture_progress = cmd_prefix + 'progress'
 cmd_teleport = cmd_prefix + 'tp'
 cmd_teleport_alt1 = cmd_prefix + 'blj'
 cmd_teleport_player = cmd_prefix + 'tpp'
+cmd_boot = cmd_prefix + 'boot'
 cmd_quarterlyreport = cmd_prefix + 'quarterlyreport'
 cmd_piss = cmd_prefix + 'piss'
 cmd_fursuit = cmd_prefix + 'fursuit'
 cmd_recycle = cmd_prefix + 'recycle'
 cmd_recycle_alt1 = cmd_prefix + 'incinerate'
+cmd_view_sap = cmd_prefix + 'sap'
+cmd_harden_sap = cmd_prefix + 'harden'
+cmd_harden_sap_alt1 = cmd_prefix + 'solidify'
+cmd_liquefy_sap = cmd_prefix + 'liquefy'
+cmd_dodge = cmd_prefix + 'dodge'
+cmd_dodge_alt1 = cmd_prefix + 'evade'
+cmd_dodge_alt2 = cmd_prefix + 'wavedash'
+cmd_taunt = cmd_prefix + 'taunt'
+cmd_aim = cmd_prefix + 'aim'
 cmd_advertise = cmd_prefix + 'advertise'
 cmd_ads = cmd_prefix + 'ads'
 cmd_confirm = cmd_prefix + 'confirm'
@@ -696,7 +709,6 @@ cmd_aptname = cmd_prefix + 'aptname'
 cmd_aptdesc = cmd_prefix + 'aptdesc'
 cmd_upgrade  = cmd_prefix + 'aptupgrade' #do we need the apt at the beginning?
 cmd_knock = cmd_prefix + 'knock'
-# TODO: Remove after Double Halloween
 cmd_trickortreat = cmd_prefix + 'trickortreat'
 cmd_breaklease = cmd_prefix + 'breaklease'
 cmd_aquarium = cmd_prefix + 'aquarium'
@@ -822,9 +834,7 @@ slimes_onrevive_everyone = 20
 slimes_toenlist = 0
 slimes_perspar_base = 0
 slimes_hauntratio = 400
-#slimes_hauntmax = 20000
-# TODO: Change back after Double Halloween
-slimes_hauntmax = 50000
+slimes_hauntmax = 20000
 slimes_perslot = 100
 slimes_perpachinko = 500
 slimecoin_exchangerate = 100
@@ -841,11 +851,10 @@ hunger_pershot = 10
 hunger_perspar = 10
 hunger_perfarm = 50
 hunger_permine = 1
-hunger_perminereset = 10
+hunger_perminereset = 25
 hunger_perfish = 15
 hunger_perscavenge = 2
 hunger_pertick = 3
-# TODO: Remove after Double Halloween
 hunger_pertrickortreat = 6
 
 # ads
@@ -871,9 +880,7 @@ acquisition_mining = "mining"
 acquisition_dojo = "dojo"
 acquisition_fishing = "fishing"
 acquisition_bartering = "bartering"
-# TODO: Remove after Double Halloween
 acquisition_trickortreating = "trickortreating"
-horseman_death_cooldown = 12 * 3600 * 4  # 2 days
 
 # standard food expiration in seconds
 std_food_expir = 12 * 3600  # 12 hours
@@ -894,10 +901,10 @@ property_class_c = "c"
 
 # district capturing
 capture_tick_length = 10  # in seconds; also affects how much progress is made per tick
-max_capture_points_s = 4915  # 90 min
-max_capture_points_a = 3277  # 60 min
-max_capture_points_b = 2458  # 45 min
-max_capture_points_c = 1638   # 30 min
+max_capture_points_s = 60 * 60  # 60 min
+max_capture_points_a = 30 * 60  # 30 min
+max_capture_points_b = 15 * 60  # 15 min
+max_capture_points_c = 5 * 60   # 5 min
 
 # district capture rates assigned to property classes
 max_capture_points = {
@@ -907,11 +914,45 @@ max_capture_points = {
 	property_class_c: max_capture_points_c
 }
 
+# how long districts stay locked after capture
+capture_lock_s = 8 * 60 * 60  # 8 hours
+capture_lock_a = 4 * 60 * 60  # 4 hours 
+capture_lock_b = 2 * 60 * 60  # 2 hours
+capture_lock_c = 1 * 60 * 60  # 1 hour
+
+# district lock times assigned to property classes
+capture_locks = {
+	property_class_s: capture_lock_s,
+	property_class_a: capture_lock_a,
+	property_class_b: capture_lock_b,
+	property_class_c: capture_lock_c,
+}
+
+# how much slimes is needed to bypass capture times
+slimes_toannex_s = 1000000 # 1 mega
+slimes_toannex_a = 500000 # 500 k
+slimes_toannex_b = 200000 # 200 k
+slimes_toannex_c = 100000 # 100 k
+
+# slimes to annex by property class
+slimes_toannex = {
+	property_class_s: slimes_toannex_s,
+	property_class_a: slimes_toannex_a,
+	property_class_b: slimes_toannex_b,
+	property_class_c: slimes_toannex_c
+}
+
+# by how much to extend the capture lock per additional gangster capping
+capture_lock_per_gangster = 30 * 60  # 30 min
+
+# capture lock messages
+capture_lock_milestone = 5 * 60 # 5 min
+
 # capture messages
 capture_milestone = 5  # after how many percent of progress the players are notified of the progress
 
 # capture speed at 0% progress
-baseline_capture_speed = 2
+baseline_capture_speed = 1
 
 # accelerates capture speed depending on current progress
 capture_gradient = 1
@@ -975,6 +1016,9 @@ weather_tick_length = 10
 
 # how often to delete expired world events
 event_tick_length = 5
+
+# how often to refresh sap
+sap_tick_length = 5
 
 # farming
 crops_time_to_grow = 180  # in minutes; 180 minutes are 3 hours
@@ -1042,9 +1086,7 @@ fish_offer_timeout = 1440 # in minutes; 24 hours
 # Cooldowns
 cd_kill = 5
 cd_spar = 60
-#cd_haunt = 600
-# TODO: Change back after Double Halloween
-cd_haunt = 180
+cd_haunt = 600
 cd_squeeze = 1200
 cd_invest = 1200
 cd_boombust = 22
@@ -1117,7 +1159,7 @@ emote_dice3 = "<:dice3:436942524041527298>"
 emote_dice4 = "<:dice4:436942524406300683>"
 emote_dice5 = "<:dice5:436942524444049408>"
 emote_dice6 = "<:dice6:436942524469346334>"
-emote_negaslime = "<:negaslime:453826200616566786>"
+emote_negaslime = "<:ns:453826200616566786>"
 emote_bustin = "<:bustin:455194248741126144>"
 emote_ghost = "<:lordofghosts:434002083256205314>"
 emote_slimefull = "<:slimefull:496397819154923553>"
@@ -1129,7 +1171,7 @@ emote_slimecorp = "<:slimecorp:568637591847698432>"
 emote_nlacakanm = "<:nlacakanm:499615025544298517>"
 emote_megaslime = "<:megaslime:436877747240042508>"
 emote_srs = "<:srs:631859962519224341>"
-emote_staydead = "<:staydead:506840095714836480>"
+emote_staydead = "<:sd:506840095714836480>"
 
 # Emotes for the negaslime writhe animation
 emote_vt = "<:vt:492067858160025600>"
@@ -1348,7 +1390,8 @@ col_time_lastenlist = 'time_lastenlist'
 col_apt_zone = 'apt_zone'
 col_visiting = "visiting"
 col_has_soul = 'has_soul'
-col_tutorial = 'tutorial'
+col_sap = 'sap'
+col_hardened_sap = 'hardened_sap'
 
 #Database columns for bartering
 col_offer_give = 'offer_give'
@@ -1393,6 +1436,8 @@ col_enemy_lifetime = 'lifetime'
 col_enemy_id_target = 'id_target'
 col_enemy_raidtimer = 'raidtimer'
 col_enemy_rare_status = 'rare_status'
+col_enemy_hardened_sap = 'hardened_sap'
+col_enemy_weathertype = 'weathertype'
 
 # Database column for the status of districts with locks on them
 col_locked_status = 'locked_status'
@@ -1412,9 +1457,6 @@ col_decayed_slimes = 'decayed_slimes'
 col_donated_slimes = 'donated_slimes'
 col_donated_poudrins = 'donated_poudrins'
 col_splattered_slimes = 'splattered_slimes'
-# TODO: Remove after Double Halloween
-col_horseman_deaths = 'horseman_deaths'
-col_horseman_timeofdeath = 'horseman_timeofdeath'
 
 # Database columns for stocks
 col_stock = 'stock'
@@ -1443,6 +1485,7 @@ col_controlling_faction = 'controlling_faction'
 col_capturing_faction = 'capturing_faction'
 col_capture_points = 'capture_points'
 col_district_slimes = 'slimes'
+col_time_unlock = 'time_unlock'
 
 # Database columns for mutations
 col_id_mutation = 'mutation'
@@ -1471,6 +1514,7 @@ col_quadrants_target2 = 'id_target2'
 # Database columns for status effects
 col_id_status = 'id_status'
 col_source = 'source'
+col_status_target = 'id_target'
 
 # Database columns for world events
 col_id_event = 'id_event'
@@ -1656,6 +1700,7 @@ source_farming = 12
 source_fishing = 13
 source_squeeze = 14
 source_weather = 15
+source_crush = 16
 
 # Categories of events that change your slimecoin total, for statistics tracking
 coinsource_spending = 0
@@ -1691,8 +1736,8 @@ stats_clear_on_death = [
 	stat_kills,
 	stat_pve_kills,
 	stat_ghostbusts,
-    stat_slimesfarmed,
-    stat_slimesscavenged
+	stat_slimesfarmed,
+	stat_slimesscavenged
 ]
 
 context_slimeoidheart = 'slimeoidheart'
@@ -1714,7 +1759,7 @@ vendor_farm = "Farm" #contains all the vegetables you can !reap
 vendor_bazaar = "bazaar"
 vendor_college = "College" #You can buy game guides from either of the colleges
 vendor_glocksburycomics = "Glocksbury Comics" #Repels and trading cards are sold here
-vendor_rpcity = "RP City" #You can buy costume creation kits here
+vendor_slimypersuits = "Slimy Persuits" #You can buy candy from here
 
 item_id_slimepoudrin = 'slimepoudrin'
 item_id_doublestuffedcrust = 'doublestuffedcrust'
@@ -1732,6 +1777,9 @@ item_id_juviegradefuckenergybodyspray = "juviegradefuckenergybodyspray"
 item_id_superduperfuckenergybodyspray = "superduperfuckenergybodyspray"
 item_id_gmaxfuckenergybodyspray = "gmaxfuckenergybodyspray"
 item_id_costumekit = "costumekit"
+item_id_doublehalloweengrist = "doublehalloweengrist"
+item_id_whitelineticket = "ticket"
+item_id_seaweedjoint = "seaweedjoint"
 
 item_id_faggot = "faggot"
 item_id_doublefaggot = "doublefaggot"
@@ -1744,9 +1792,9 @@ item_id_paradoxchocs = "paradoxchocs"
 item_id_licoricelobsters = "licoricelobsters"
 item_id_chocolateslimecorpbadges = "chocolateslimecorpbadges"
 item_id_munchies = "munchies"
-item_id_sni = "sni"
+item_id_snipercannon = "snipercannon"
 item_id_twixten = "twixten"
-item_id_slimeybears = "slimeybears"
+item_id_slimybears = "slimybears"
 item_id_marsbar = "marsbar"
 item_id_magickspatchkids = "magickspatchkids"
 item_id_atms = "atms"
@@ -1764,42 +1812,6 @@ item_id_strauberryshortcakes = "strauberryshortcakes"
 item_id_chutzpahcherries = "chutzpahcherries"
 item_id_n3crunch = "n3crunch"
 item_id_slimesours = "slimesours"
-
-# TODO: Remove after Double Halloween
-# A list used to check if certain items can be made into Double Halloween Grist
-candy_ids_list = [
-	item_id_paradoxchocs,
-	item_id_licoricelobsters,
-	item_id_chocolateslimecorpbadges,
-	item_id_munchies,
-	item_id_sni,
-	item_id_twixten,
-	item_id_slimeybears,
-	item_id_marsbar,
-	item_id_magickspatchkids,
-	item_id_atms,
-	item_id_seanis,
-	item_id_candybungis,
-	item_id_turstwerthers,
-	item_id_poudrinpops,
-	item_id_juvieranchers,
-	item_id_krakel,
-	item_id_swedishbassedgods,
-	item_id_bustahfingers,
-	item_id_endlesswarheads,
-	item_id_n8heads,
-	item_id_strauberryshortcakes,
-	item_id_chutzpahcherries,
-	item_id_n3crunch,
-	item_id_slimesours,
-]
-
-item_id_doublehalloweengrist = "doublehalloweengrist"
-item_id_whitelineticket = "ticket"
-
-# Possibly NOT remove after Double Halloween? 
-# In any case, this is so that people who gain slime from the horseman don't use it to cause any major slime count shifts for the kingpins
-slimes_toboss_max = 1000000
 
 #vegetable ids
 item_id_poketubers = "poketubers"
@@ -2201,7 +2213,6 @@ item_list = [
 		],
 		str_name = "Double Halloween Costume Kit",
 		str_desc = "A package of all the necessary tools and fabrics needed to make the Double Halloween costume of your dreams.",
-		vendors = [vendor_rpcity],
 		price = 50000,
 	),
 	EwGeneralItem(
@@ -2250,6 +2261,7 @@ def wef_revolver(ctn = None):
 	ctn.slimes_damage = int(ctn.slimes_damage * 0.8)
 	aim = (random.randrange(10) + 1)
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.sap_damage = 2
 
 	if aim <= (1 + int(10 * ctn.miss_mod)):
 		if mutation_id_sharptoother in user_mutations:
@@ -2266,6 +2278,7 @@ def wef_revolver(ctn = None):
 def wef_dualpistols(ctn = None):
 	aim = (random.randrange(10) + 1)
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.sap_damage = 2
 
 	if aim <= (4 + int(10 * ctn.miss_mod)):
 		if mutation_id_sharptoother in user_mutations:
@@ -2282,6 +2295,7 @@ def wef_dualpistols(ctn = None):
 def wef_shotgun(ctn = None):
 	ctn.slimes_damage = int(ctn.slimes_damage * 1.65)
 	ctn.slimes_spent = int(ctn.slimes_spent * 1.5)
+	ctn.sap_damage = 5
 
 	aim = (random.randrange(10) + 1)
 	user_mutations = ctn.user_data.get_mutations()
@@ -2302,6 +2316,7 @@ def wef_rifle(ctn = None):
 	ctn.slimes_damage = int(ctn.slimes_damage * 1.25)	
 	ctn.slimes_spent = int(ctn.slimes_spent * 1.5) 
 	aim = (random.randrange(10) + 1)
+	ctn.sap_ignored = 10
 
 	if aim >= (9 - int(10 * ctn.crit_mod)):
 		ctn.crit = True
@@ -2309,7 +2324,7 @@ def wef_rifle(ctn = None):
 
 # weapon effect function for "smg"
 def wef_smg(ctn = None):
-	dmg = int(ctn.slimes_damage * 0.5)
+	dmg = int(ctn.slimes_damage * 0.4)
 	ctn.slimes_damage = 0
 	jam = (random.randrange(10) + 1)
 	user_mutations = ctn.user_data.get_mutations()
@@ -2339,16 +2354,18 @@ def wef_smg(ctn = None):
 		if ctn.strikes == 0:
 			ctn.miss = True
 
+	ctn.sap_damage = ctn.strikes
+
 # weapon effect function for "minigun"
 def wef_minigun(ctn = None):
-	dmg = ctn.slimes_damage
+	dmg = 0.8 * ctn.slimes_damage
 	ctn.slimes_damage = 0
 	user_mutations = ctn.user_data.get_mutations()
 
 	for count in range(10):
 		aim = (random.randrange(10) + 1)
 
-		if aim > (1 + int(10 * ctn.miss_mod)):
+		if aim > (5 + int(10 * ctn.miss_mod)):
 			ctn.strikes += 1
 
 			if aim >= (10 - int(10 * ctn.crit_mod)):
@@ -2367,51 +2384,61 @@ def wef_minigun(ctn = None):
 	if ctn.strikes == 0:
 		ctn.miss = True
 
+	ctn.sap_damage = 2 * ctn.strikes
+
 # weapon effect function for "bat"
 def wef_bat(ctn = None): 
 	aim = (random.randrange(0, 13) - 2)
 	user_mutations = ctn.user_data.get_mutations()
 	dmg = ctn.slimes_damage
+	ctn.sap_damage = 2
 	
 	# Increased miss chance if attacking within less than two seconds after last attack
-	time_lastattack = ctn.time_now - (int(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
-	ctn.miss_mod += (2 - min(time_lastattack, 2)) / 5
+	time_lastattack = ctn.time_now - (float(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
+	ctn.miss_mod += (((3 - min(time_lastattack, 3)) / 3) ** 2) / 13 * 10
 
-	ctn.slimes_damage = int(ctn.slimes_damage * ((aim/10) + 2) )
+	ctn.slimes_damage = int(ctn.slimes_damage * ((aim/5) + 0.5) )
 
-	if aim <= (-2 + int(13 * ctn.miss_mod)):
+	if aim == -2:
+		if mutation_id_sharptoother in user_mutations:
+			if random.random() < 0.5:
+				ctn.backfire = True
+				ctn.backfire_damage = ctn.slimes_damage
+		else:
+			ctn.backfire = True
+			ctn.backfire_damage = ctn.slimes_damage
+
+	elif aim <= (-1 + int(13 * ctn.miss_mod)):
 		if mutation_id_sharptoother in user_mutations:
 			if random.random() < 0.5:
 				ctn.miss = True
 		else:
 			ctn.miss = True
 
-	elif aim == -1:
-		if mutation_id_sharptoother in user_mutations:
-			if random.random() < 0.5:
-				ctn.backfire = True if not ctn.sandbag_mode else False
-				if not ctn.backfire:
-					return
-				ctn.user_data.change_slimes(n = -ctn.slimes_damage, source = source_self_damage)
-		else:
-			ctn.backfire = True if not ctn.sandbag_mode else False
-			if not ctn.backfire:
-				return
-			ctn.user_data.change_slimes(n = -ctn.slimes_damage, source = source_self_damage)
-
-	elif aim >= (11 - int(13 * ctn.crit_mod)):
+	elif aim >= (10 - int(13 * ctn.crit_mod)):
 		ctn.crit = True
 		ctn.slimes_damage = int(dmg * 4)
 		
 # weapon effect function for "brassknuckles"
 def wef_brassknuckles(ctn = None):
-	last_attack = (int(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else 0)
-	successful_timing = True if (ctn.time_now - last_attack) == 2 else False
+	last_attack = (float(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else 0)
+	successful_timing = 2.1 > (ctn.time_now - last_attack) > 1.9
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.strikes = 0
+
+	damage_min = ctn.slimes_damage / 10
+	
+	if last_attack > 0:
+		ctn.slimes_damage = damage_min * ((min(last_attack, 2) / 2)**0.5  * 10)
+	else:
+		ctn.slimes_damage = damage_min
+
+	ctn.slimes_damage = int(max(ctn.slimes_damage, damage_min))
 
 	consecutive_hits = (int(ctn.weapon_item.item_props.get("consecutive_hits")) if ctn.weapon_item.item_props.get("consecutive_hits") != None else 0)
 	if consecutive_hits == 2 and successful_timing:
 		ctn.crit = True
+		ctn.sap_damage = 5
 		ctn.slimes_damage *= 3
 		ctn.weapon_item.item_props["consecutive_hits"] = 0
 
@@ -2437,22 +2464,37 @@ def wef_brassknuckles(ctn = None):
 		if whiff1 == 0 and whiff2 == 0:
 			ctn.miss = True
 		else:
-			strikes = whiff1 + whiff2
+			ctn.strikes = whiff1 + whiff2
 			ctn.slimes_damage = (ctn.slimes_damage * whiff1) + (ctn.slimes_damage * whiff2)
 			if successful_timing:
-				ctn.weapon_item.item_props["consecutive_hits"] = consecutive_hits + 1 
+				ctn.weapon_item.item_props["consecutive_hits"] = consecutive_hits + 1
+			else:
+				ctn.weapon_item.item_props["consecutive_hits"] = 0
+				
+	
 
 # weapon effect function for "katana"
 def wef_katana(ctn = None):
 	ctn.slimes_damage = int(ctn.slimes_damage * 1.3)
 	ctn.slimes_spent = int(ctn.slimes_spent * 1.3)
+	ctn.sap_damage = 0
 
 	# Decreased damage if attacking within less than four seconds after last attack
-	time_lastattack = ctn.time_now - (int(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
+	time_lastattack = ctn.time_now - (float(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
 
-	ctn.slimes_damage = ctn.slimes_damage / 10
+	damage_min = ctn.slimes_damage / 10
+	
+
 	if time_lastattack > 0:
-		ctn.slimes_damage = int(ctn.slimes_damage * (min(time_lastattack, 4) * 2.5))
+		ctn.slimes_damage = damage_min * ((min(time_lastattack, 5) / 5)**0.5  * 10)
+	else:
+		ctn.slimes_damage = damage_min
+
+	ctn.slimes_damage = int(max(ctn.slimes_damage, damage_min))
+	
+	if 5.2 > time_lastattack > 4.8:
+		ctn.sap_ignored = 10
+
 
 	weapons_held = ewitem.inventory(
 		id_user = ctn.user_data.id_user,
@@ -2468,34 +2510,35 @@ def wef_katana(ctn = None):
 	elif len(weapons_held) == 1:
 		ctn.crit = True
 		ctn.slimes_damage *= 2
+		ctn.sap_ignored *= 1.5
 
 # weapon effect function for "broadsword"
 def wef_broadsword(ctn = None):
-	ctn.slimes_spent = int(ctn.slimes_spent * 1.5)
+	ctn.slimes_spent = int(ctn.slimes_spent * 5)
+	dmg = ctn.slimes_damage
+	ctn.slimes_damage *= 3
 	aim = (random.randrange(10) + 1)
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.sap_damage = 5
+	ctn.sap_ignored = 20
 
-	ctn.slimes_damage += int( ctn.slimes_damage * (min(10, int(ctn.weapon_item.item_props.get("kills"))) / 2) )
+	ctn.slimes_damage += int( dmg * (min(10, int(ctn.weapon_item.item_props.get("kills"))) / 2) )
 
-	if aim <= (1 + int(10 * ctn.miss_mod)):
+	if aim <= 2:
+		if mutation_id_sharptoother in user_mutations:
+			if random.random() < 0.5:
+				ctn.backfire = True
+				ctn.backfire_damage = ctn.slimes_damage
+		else:
+			ctn.backfire = True
+			ctn.backfire_damage = ctn.slimes_damage
+
+	elif aim <= (3 + int(10 * ctn.miss_mod)):
 		if mutation_id_sharptoother in user_mutations:
 			if random.random() < 0.5:
 				ctn.miss = True
 		else:
 			ctn.miss = True
-
-	elif aim <= 3:
-		if mutation_id_sharptoother in user_mutations:
-			if random.random() < 0.5:
-				ctn.backfire = True if not ctn.sandbag_mode else False
-				if not ctn.backfire:
-					return
-				ctn.user_data.change_slimes(n = -ctn.slimes_damage)
-		else:
-			ctn.backfire = True if not ctn.sandbag_mode else False
-			if not ctn.backfire:
-				return
-			ctn.user_data.change_slimes(n = -ctn.slimes_damage)
 
 	elif aim >= (9 - int(10 * ctn.crit_mod)):
 		ctn.crit = True
@@ -2508,35 +2551,36 @@ def wef_nunchucks(ctn = None):
 	ctn.slimes_damage = 0
 	user_mutations = ctn.user_data.get_mutations()
 
-	time_lastattack = ctn.time_now - (int(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
-	ctn.miss_mod += (2 - min(time_lastattack, 2)) / 5
+	time_lastattack = ctn.time_now - (float(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
+	ctn.miss_mod += (((3 - min(time_lastattack, 3)) / 3) ** 2) / 100 * 55
 
 	for count in range(4):
 		if (random.randrange(100) + 1) > (25 + int(100 * ctn.miss_mod)):
 			ctn.strikes += 1
-			ctn.slimes_damage += int(dmg * 0.5)
+			ctn.slimes_damage += int(dmg * 0.25)
 		elif mutation_id_sharptoother in user_mutations:
 			if random.random() < 0.5:
 				ctn.strikes += 1
-				ctn.slimes_damage += int(dmg * 0.5)
+				ctn.slimes_damage += int(dmg * 0.25)
 
 	if ctn.strikes == 4:
 		ctn.crit = True
-		# extra hit that deals 4* base damage
+		# extra hit that deals 2* base damage
 		ctn.strikes = 5
-		ctn.slimes_damage += dmg * 4
+		ctn.slimes_damage += dmg * 2
 
 	elif ctn.strikes == 0:
-		ctn.backfire = True if not ctn.sandbag_mode else False
-		if not ctn.backfire:
-			return
-		ctn.user_data.change_slimes(n = (-dmg * 2), source = source_self_damage)
+		ctn.backfire = True
+		ctn.backfire_damage = dmg * 2
+	
+	ctn.sap_damage = ctn.strikes
 
 # weapon effect function for "scythe"
 def wef_scythe(ctn = None):
-	ctn.slimes_spent = int(ctn.slimes_spent * 1.5)
-	ctn.slimes_damage = int(ctn.slimes_damage * 0.25)
+	ctn.slimes_spent = int(ctn.slimes_spent * 3)
+	ctn.slimes_damage = int(ctn.slimes_damage * 0.5)
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.sap_damage = 0
 
 	try:
 		target_kills = ewstats.get_stat(user = ctn.shootee_data, metric = stat_kills)
@@ -2544,13 +2588,18 @@ def wef_scythe(ctn = None):
 		target_kills = 4
 
 	ctn.slimes_damage = ctn.slimes_damage * max(1, min(target_kills, 10))
+	ctn.sap_ignored = 3 * min(target_kills, 10)
 
-	# Decreased damage if attacking within less than two seconds after last attack
-	time_lastattack = ctn.time_now - (int(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
-	ctn.slimes_damage = ctn.slimes_damage / 10
+	# Decreased damage if attacking within less than three seconds after last attack
+	time_lastattack = ctn.time_now - (float(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
+	damage_min = ctn.slimes_damage / 10
 	if time_lastattack > 0:
-		ctn.slimes_damage = int(ctn.slimes_damage * (min(time_lastattack, 2) * 5))
+		ctn.slimes_damage = damage_min * ((min(time_lastattack, 3)/3)**0.5 * 10)
+	else:
+		ctn.slimes_damage = damage_min
 
+	ctn.slimes_damage = int(max(ctn.slimes_damage, damage_min))
+	
 	aim = (random.randrange(10) + 1)
 
 	if aim <= (1 + (10 * ctn.miss_mod)):
@@ -2560,17 +2609,17 @@ def wef_scythe(ctn = None):
 		else:
 			ctn.miss = True
 
-	elif aim >= (10 + (10 * ctn.crit_mod)):
+	elif aim >= (10 - (10 * ctn.crit_mod)):
 		ctn.crit = True
 		ctn.slimes_damage *= 2
 
 # weapon effect function for "yo-yos"
 def wef_yoyo(ctn = None):
 	base_dmg = ctn.slimes_damage
-	ctn.slimes_damage = int(ctn.slimes_damage * 0.5)
+	ctn.slimes_damage = ctn.slimes_damage * 0.5
 	user_mutations = ctn.user_data.get_mutations()
 
-	time_lastattack = ctn.time_now - (int(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
+	time_lastattack = ctn.time_now - (float(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
 
 	#Consecutive hits only valid for a minute
 	if time_lastattack < 60:
@@ -2578,10 +2627,17 @@ def wef_yoyo(ctn = None):
 	else:
 		ctn.weapon_item.item_props["consecutive_hits"] = 0
 
-	ctn.slimes_damage = int(ctn.slimes_damage / 10)
+	damage_min = ctn.slimes_damage / 10
 
 	if time_lastattack > 0:
-		ctn.slimes_damage = int(ctn.slimes_damage * (min(time_lastattack, 1) * 10) )
+		ctn.slimes_damage = damage_min * ((min(time_lastattack, 2)/2) ** 0.5 * 10) 
+	else:
+		ctn.slimes_damage = damage_min
+
+	ctn.slimes_damage = int(max(ctn.slimes_damage, damage_min))
+
+	if time_lastattack >= 2:
+		ctn.sap_damage = 1
 
 	ctn.weapon_item.item_props["consecutive_hits"] = int(ctn.weapon_item.item_props["consecutive_hits"]) + 1
 	aim = (random.uniform(0, 100))
@@ -2603,6 +2659,7 @@ def wef_knives(ctn = None):
 	ctn.slimes_spent = int(ctn.slimes_spent * 0.25)
 	ctn.slimes_damage = int(ctn.slimes_damage * 0.5)
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.sap_damage = 0
 
 	aim = (random.randrange(10) + 1)
 
@@ -2623,6 +2680,8 @@ def wef_molotov(ctn = None):
 	ctn.slimes_damage = int(ctn.slimes_damage * 0.75)
 	ctn.slimes_spent *= 2
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.sap_damage = 0
+	ctn.sap_ignored = 10
 
 	aim = (random.randrange(10) + 1)
 
@@ -2631,15 +2690,11 @@ def wef_molotov(ctn = None):
 	if aim <= 2:
 		if mutation_id_sharptoother in user_mutations:
 			if random.random() < 0.5:
-				ctn.backfire = True if not ctn.sandbag_mode else False
-				if not ctn.backfire:
-					return
-				ctn.user_data.change_slimes(n = -dmg, source = source_self_damage)
+				ctn.backfire = True
+				ctn.backfire_damage = dmg
 		else:
-			ctn.backfire = True if not ctn.sandbag_mode else False
-			if not ctn.backfire:
-				return
-			ctn.user_data.change_slimes(n = -dmg, source = source_self_damage)
+			ctn.backfire = True
+			ctn.backfire_damage = dmg
 
 	elif aim > 2 and aim <= (3 + (10 * ctn.miss_mod)):
 		if mutation_id_sharptoother in user_mutations:
@@ -2660,6 +2715,7 @@ def wef_grenade(ctn = None):
 	ctn.slimes_spent *= 2
 	ctn.bystander_damage = int(dmg * 0.3)
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.sap_damage = 2
 
 	aim = (random.randrange(10) + 1)
 
@@ -2675,15 +2731,11 @@ def wef_grenade(ctn = None):
 	elif aim > 1 and aim <= 2:
 		if mutation_id_sharptoother in user_mutations:
 			if random.random() < 0.5:
-				ctn.backfire = True if not ctn.sandbag_mode else False
-				if not ctn.backfire:
-					return
-				ctn.user_data.change_slimes(n = -ctn.slimes_damage, source = source_self_damage)
+				ctn.backfire = True
+				ctn.backfire_damage = ctn.slimes_damage
 		else:
-			ctn.backfire = True if not ctn.sandbag_mode else False
-			if not ctn.backfire:
-				return
-			ctn.user_data.change_slimes(n = -ctn.slimes_damage, source = source_self_damage)
+			ctn.backfire = True
+			ctn.backfire_damage = ctn.slimes_damage
 
 	elif aim >= (10 - (10 * ctn.crit_mod)):
 		ctn.crit = True
@@ -2692,6 +2744,8 @@ def wef_grenade(ctn = None):
 # weapon effect function for "garrote"
 def wef_garrote(ctn = None):
 	ctn.slimes_damage *= 15
+	ctn.sap_damage = 0
+	ctn.sap_ignored = ctn.shootee_data.hardened_sap
 
 	user_mutations = ctn.user_data.get_mutations()
 	aim = (random.randrange(100) + 1)
@@ -2717,6 +2771,7 @@ def wef_garrote(ctn = None):
 # weapon effect function for all weapons which double as tools.
 def wef_tool(ctn = None):
 	ctn.slimes_damage *= 0.2
+	ctn.sap_damage = 0
 
 	aim = (random.randrange(10) + 1)
 	user_mutations = ctn.user_data.get_mutations()
@@ -2736,31 +2791,35 @@ def wef_tool(ctn = None):
 
 # weapon effect function for "bass"
 def wef_bass(ctn = None):
-	aim = (random.randrange(21) - 10)
+	aim = (random.randrange(0, 13) - 2)
 	user_mutations = ctn.user_data.get_mutations()
-
+	dmg = ctn.slimes_damage
+	ctn.sap_damage = 1
+	ctn.sap_ignored = 5
+	
 	# Increased miss chance if attacking within less than two seconds after last attack
-	time_lastattack = ctn.time_now - (int(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
-	ctn.miss_mod += (2 - min(time_lastattack, 2)) / 5
+	time_lastattack = ctn.time_now - (float(ctn.weapon_item.item_props.get("time_lastattack")) if ctn.weapon_item.item_props.get("time_lastattack") != None else ctn.time_now)
+	ctn.miss_mod += (((3 - min(time_lastattack, 3)) / 3) ** 2) / 13 * 10
 
-	if aim <= (-10 + int(21 * ctn.miss_mod)):
+	ctn.slimes_damage = int(ctn.slimes_damage * ((aim/5) + 0.5) )
+
+	if aim <= (-2 + int(13 * ctn.miss_mod)):
 		if mutation_id_sharptoother in user_mutations:
 			if random.random() < 0.5:
 				ctn.miss = True
 		else:
 			ctn.miss = True
 
-	ctn.slimes_damage = int(ctn.slimes_damage * (1 + (aim / 10)))
-
-	if aim >= 9:
+	elif aim >= (9 - int(13 * ctn.crit_mod)):
 		ctn.crit = True
-		ctn.slimes_damage = int(ctn.slimes_damage * 1.75)
+		ctn.slimes_damage = int(dmg * 4)
 
 # A Weapon Effect Function for "umbrella". Takes an EwEffectContainer as ctn.
 def wef_umbrella(ctn = None):
-	ctn.slimes_damage = int(ctn.slimes_damage * 0.8)
+	ctn.slimes_damage = int(ctn.slimes_damage * 0.5)
 	aim = (random.randrange(10) + 1)
 	user_mutations = ctn.user_data.get_mutations()
+	ctn.sap_damage = 1
 
 	if aim <= (1 + int(10 * ctn.miss_mod)):
 		if mutation_id_sharptoother in user_mutations:
@@ -2781,28 +2840,30 @@ weapon_class_exploding = "exploding"
 weapon_class_jammable = "jammable"
 weapon_class_captcha = "captcha"
 weapon_class_defensive = "defensive"
+weapon_class_heavy = "heavy"
 
 # All weapons in the game.
 weapon_list = [
 	EwWeapon( # 1
 		id_weapon = weapon_id_revolver,
-        alias = [
-            "pistol",
-            "handgun",
-            "bigiron"
-        ],
+		alias = [
+			"pistol",
+			"handgun",
+			"bigiron"
+		],
 		str_crit = "**Critical Hit!** You have fataly wounded {name_target} with a lethal shot!",
-        str_miss = "**You missed!** Your shot whizzed past {name_target}'s head!",
-        str_equip = "You equip the revolver.",
-        str_weapon = "revolver",
+		str_miss = "**You missed!** Your shot whizzed past {name_target}'s head!",
+		str_equip = "You equip the revolver.",
+		str_name = "revolver",
+		str_weapon = "a revolver",
 		str_weaponmaster_self = "You are a rank {rank} master of the revolver.",
-        str_weaponmaster = "They are a rank {rank} master of the revolver.",
-        str_trauma_self = "You have scarring on both temples, which occasionally bleeds.",
-        str_trauma = "They have scarring on both temples, which occasionally bleeds.",
-        str_kill = "{name_player} puts their revolver to {name_target}'s head. **BANG**. Execution-style. Blood splatters across the hot asphalt. {emote_skull}",
-        str_killdescriptor = "gunned down",
+		str_weaponmaster = "They are a rank {rank} master of the revolver.",
+		str_trauma_self = "You have scarring on both temples, which occasionally bleeds.",
+		str_trauma = "They have scarring on both temples, which occasionally bleeds.",
+		str_kill = "{name_player} puts their revolver to {name_target}'s head. **BANG**. Execution-style. Blood splatters across the hot asphalt. {emote_skull}",
+		str_killdescriptor = "gunned down",
 		str_damage = "{name_target} takes a bullet to the {hitzone}!!",
-        str_duel = "**BANG BANG**. {name_player} and {name_target} practice their quick-draw, bullets whizzing past one another's heads.",
+		str_duel = "**BANG BANG**. {name_player} and {name_target} practice their quick-draw, bullets whizzing past one another's heads.",
 		str_description = "It's a revolver.",
 		str_reload = "You swing out the revolver’s chamber, knocking out the used shells onto the floor before hastily slamming fresh bullets back into it.",
 		str_reload_warning = "**BANG--** *tk tk...* **SHIT!!** {name_player} just spent the last of the ammo in their revolver’s chamber, it’s out of bullets!!",
@@ -2810,28 +2871,31 @@ weapon_list = [
 		fn_effect = wef_revolver,
 		clip_size = 6,
 		vendors = [vendor_dojo],
-		classes = [weapon_class_ammo],
-		stat = stat_revolver_kills
+		classes = [weapon_class_ammo, weapon_class_captcha],
+		stat = stat_revolver_kills,
+		sap_cost = 1,
+		captcha_length = 4
 	),
 	EwWeapon( # 2
 		id_weapon = weapon_id_dualpistols,
-        alias = [
-            "dual",
-            "pistols",
-            "berettas",
-        ],
+		alias = [
+			"dual",
+			"pistols",
+			"berettas",
+		],
 		str_crit = "**Critical Hit!** {name_player} has lodged several bullets into {name_target}'s vital arteries!",
-        str_miss = "**You missed!** Your numerous, haphazard shots hit everything but {name_target}!",
-        str_equip = "You equip the dual pistols.",
-        str_weapon = "dual pistols",
+		str_miss = "**You missed!** Your numerous, haphazard shots hit everything but {name_target}!",
+		str_equip = "You equip the dual pistols.",
+		str_name = "dual pistols",
+		str_weapon = "dual pistols",
 		str_weaponmaster_self = "You are a rank {rank} master of the dual pistols.",
-        str_weaponmaster = "They are a rank {rank} master of the dual pistols.",
-        str_trauma_self = "You have several stitches embroidered into your chest over your numerous bullet wounds.",
-        str_trauma = "They have several stitches embroidered into your chest over your numerous bullet wounds.",
-        str_kill = "{name_player} dramatically pulls both triggers on their dual pistols midair, sending two bullets straight into {name_target}'s lungs'. {emote_skull}",
-        str_killdescriptor = "double gunned down",
-        str_damage = "{name_target} takes a flurry of bullets to the {hitzone}!!",
-        str_duel = "**tk tk tk tk tk tk tk tk tk tk**. {name_player} and {name_target} hone their twitch aim and trigger fingers, unloading clip after clip of airsoft BBs into one another with the eagerness of small children.",
+		str_weaponmaster = "They are a rank {rank} master of the dual pistols.",
+		str_trauma_self = "You have several stitches embroidered into your chest over your numerous bullet wounds.",
+		str_trauma = "They have several stitches embroidered into your chest over your numerous bullet wounds.",
+		str_kill = "{name_player} dramatically pulls both triggers on their dual pistols midair, sending two bullets straight into {name_target}'s lungs'. {emote_skull}",
+		str_killdescriptor = "double gunned down",
+		str_damage = "{name_target} takes a flurry of bullets to the {hitzone}!!",
+		str_duel = "**tk tk tk tk tk tk tk tk tk tk**. {name_player} and {name_target} hone their twitch aim and trigger fingers, unloading clip after clip of airsoft BBs into one another with the eagerness of small children.",
 		str_description = "They're dual pistols.",
 		str_reload = "You swing out the chamber on both of your dual pistols, knocking out the used shells onto the floor before hastily slamming fresh bullets back into them.",
 		str_reload_warning = "**tk tk tk tk--** *tk...* **SHIT!!** {name_player} just spent the last of the ammo in their dual pistol’s chambers, they’re out of bullets!!",
@@ -2840,28 +2904,31 @@ weapon_list = [
 		clip_size = 12,
 		price = 10000,
 		vendors = [vendor_dojo],
-		classes = [weapon_class_ammo],
-		stat = stat_dual_pistols_kills
+		classes = [weapon_class_ammo, weapon_class_captcha],
+		stat = stat_dual_pistols_kills,
+		sap_cost = 1,
+		captcha_length = 2
 	),
 	EwWeapon( # 3
 		id_weapon = weapon_id_shotgun,
-        alias = [
-            "boomstick",
-            "remington",
-            "scattergun",
-        ],
+		alias = [
+			"boomstick",
+			"remington",
+			"scattergun",
+		],
 		str_crit = "**Critical Hit!** {name_player} has landed a thick, meaty shot into {name_target}'s chest!",
-        str_miss = "**You missed!** Your pellets inexplicably dodge {name_target}. Fucking random bullet spread, this game will never be competitive.",
-        str_equip = "You equip the shotgun.",
-        str_weapon = "shotgun",
-        str_weaponmaster_self = "You are a rank {rank} master of the shotgun.",
-        str_weaponmaster = "They are a rank {rank} master of the shotgun.",
-        str_trauma_self = "You have a few large, gaping holes in your abdomen. Someone could stick their arm through the biggest one.",
-        str_trauma = "They have a few large, gaping holes in your abdomen. Someone could stick their arm through the biggest one.",
-        str_kill = "{name_player} blasts their shotgun into {name_target}'s chest at point-blank range, causing guts to explode from their back and coat the surrounding street. chk chk Who's next? {emote_skull}",
-        str_killdescriptor = "pumped full of lead",
-        str_damage = "{name_target} takes a shotgun blast to the {hitzone}!!",
-        str_duel = "**BOOM.** {name_player} and {name_target} stand about five feet away from a wall, pumping it full of lead over and over to study it's bullet spread.",
+		str_miss = "**You missed!** Your pellets inexplicably dodge {name_target}. Fucking random bullet spread, this game will never be competitive.",
+		str_equip = "You equip the shotgun.",
+		str_name = "shotgun",
+		str_weapon = "a shotgun",
+		str_weaponmaster_self = "You are a rank {rank} master of the shotgun.",
+		str_weaponmaster = "They are a rank {rank} master of the shotgun.",
+		str_trauma_self = "You have a few large, gaping holes in your abdomen. Someone could stick their arm through the biggest one.",
+		str_trauma = "They have a few large, gaping holes in your abdomen. Someone could stick their arm through the biggest one.",
+		str_kill = "{name_player} blasts their shotgun into {name_target}'s chest at point-blank range, causing guts to explode from their back and coat the surrounding street. chk chk Who's next? {emote_skull}",
+		str_killdescriptor = "pumped full of lead",
+		str_damage = "{name_target} takes a shotgun blast to the {hitzone}!!",
+		str_duel = "**BOOM.** {name_player} and {name_target} stand about five feet away from a wall, pumping it full of lead over and over to study it's bullet spread.",
 		str_description = "It's a shotgun.",
 		str_reload = "You tilt your shotgun and pop shell after shell into it’s chamber before cocking the forend back. Groovy.",
 		str_reload_warning = "**chk--** *...* **SHIT!!** {name_player}’s shotgun has ejected the last shell in it’s chamber, it’s out of ammo!!",
@@ -2870,8 +2937,10 @@ weapon_list = [
 		clip_size = 2,
 		price = 10000,
 		vendors = [vendor_dojo],
-		classes = [weapon_class_ammo],
-		stat = stat_shotgun_kills
+		classes = [weapon_class_ammo, weapon_class_captcha],
+		stat = stat_shotgun_kills,
+		sap_cost = 5,
+		captcha_length = 6
 	),	
 	EwWeapon( # 4
 		id_weapon = weapon_id_rifle,
@@ -2883,6 +2952,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** You unload an entire magazine into the target!!",
 		str_miss = "**You missed!** Not one of your bullets connected!!",
 		str_equip = "You equip the assault rifle.",
+		str_name = "assault rifle",
 		str_weapon = "an assault rifle",
 		str_weaponmaster_self = "You are a rank {rank} master of the assault rifle.",
 		str_weaponmaster = "They are a rank {rank} master of the assault rifle.",
@@ -2900,67 +2970,75 @@ weapon_list = [
 		clip_size = 4,
 		price = 10000,
 		vendors = [vendor_dojo],
-		classes = [weapon_class_ammo],
-		stat = stat_rifle_kills
+		classes = [weapon_class_ammo, weapon_class_captcha],
+		stat = stat_rifle_kills,
+		sap_cost = 4,
+		captcha_length = 6
 	),
 	EwWeapon( # 5
 		id_weapon = weapon_id_smg,
-        alias = [
-            "submachinegun",
-            "machinegun"
-        ],
-        str_crit = "**Critical hit!!** {name_target}’s vital arteries are ruptured by miraculously accurate bullets that actually hit their intended target!!",
-        str_miss = "**You missed!!** {name_player}'s reckless aiming sends their barrage of bullets in every direction but into {name_target}’s body!",
-        str_equip = "You equip the SMG.",
-        str_weapon = "a SMG",
-        str_weaponmaster_self = "You are a rank {rank} master of the SMG.",
-        str_weaponmaster = "They are a rank {rank} master of the SMG.",
-        str_trauma_self = "Your copious amount of bullet holes trigger onlookers’ Trypophobia.",
-        str_trauma = "Their copious amount of bullet holes trigger onlookers’ Trypophobia.",
-        str_kill = "**RATTA TATTA TAT!!** {name_player}’s bullet rip through what little was left of {name_target} after the initial barrage. All that remains is a few shreds of clothing and splatterings of slime. {emote_skull}",
-        str_killdescriptor = "riddled with bullets",
-        str_damage = "A reckless barrage of bullets pummel {name_target}’s {hitzone}!!",
-        str_duel = "**RATTA TATTA TAT!!** {name_player} and {name_target} spray bullets across the floor and walls of the Dojo, having a great time.",
-        str_description = "It's a submachine gun.",
+		alias = [
+			"submachinegun",
+			"machinegun"
+		],
+		str_crit = "**Critical hit!!** {name_target}’s vital arteries are ruptured by miraculously accurate bullets that actually hit their intended target!!",
+		str_miss = "**You missed!!** {name_player}'s reckless aiming sends their barrage of bullets in every direction but into {name_target}’s body!",
+		str_equip = "You equip the SMG.",
+		str_name = "SMG",
+		str_weapon = "an SMG",
+		str_weaponmaster_self = "You are a rank {rank} master of the SMG.",
+		str_weaponmaster = "They are a rank {rank} master of the SMG.",
+		str_trauma_self = "Your copious amount of bullet holes trigger onlookers’ Trypophobia.",
+		str_trauma = "Their copious amount of bullet holes trigger onlookers’ Trypophobia.",
+		str_kill = "**RATTA TATTA TAT!!** {name_player}’s bullet rip through what little was left of {name_target} after the initial barrage. All that remains is a few shreds of clothing and splatterings of slime. {emote_skull}",
+		str_killdescriptor = "riddled with bullets",
+		str_damage = "A reckless barrage of bullets pummel {name_target}’s {hitzone}!!",
+		str_duel = "**RATTA TATTA TAT!!** {name_player} and {name_target} spray bullets across the floor and walls of the Dojo, having a great time.",
+		str_description = "It's a submachine gun.",
 		str_jammed = "Your SMG jams again, goddamn piece of shit gun...",
 		str_reload = "You hastily rip the spent magazine out of your SMG, before slamming a fresh one back into it.",
-        str_reload_warning = "**RATTA TATTA--** *tk tk tk tk…* **SHIT!!** {name_player}’s SMG just chewed up the last of it’s magazine, it’s out of bullets!!",
-        str_unjam = "{name_player} successfully whacks their SMG hard enough to dislodge whatever hunk of gunk was blocking it’s internal processes.",
+		str_reload_warning = "**RATTA TATTA--** *tk tk tk tk…* **SHIT!!** {name_player}’s SMG just chewed up the last of it’s magazine, it’s out of bullets!!",
+		str_unjam = "{name_player} successfully whacks their SMG hard enough to dislodge whatever hunk of gunk was blocking it’s internal processes.",
 		str_scalp = " It has a bunch of holes strewn throughout it.",
 		fn_effect = wef_smg,
 		clip_size = 4,
 		price = 10000,
 		vendors = [vendor_dojo],
 		classes = [weapon_class_ammo, weapon_class_jammable],
-		stat = stat_smg_kills
+		stat = stat_smg_kills,
+		sap_cost = 3,
+		captcha_length = 4
 	),	
-		EwWeapon( # 6
+	EwWeapon( # 6
 		id_weapon = weapon_id_minigun,
-        alias = [
-            "mini",
-            "gatlinggun"
-        ],
-        str_crit = "**Critical hit!!** Round after round of bullets fly through {name_target}, inflicting irreparable damage!!",
-        str_miss = "**You missed!!** Despite the growing heap of used ammunition shells {name_player} has accrued, none of their bullets actually hit {name_target}!",
-        str_equip = "You equip the minigun.",
-        str_weapon = "a minigun",
-        str_weaponmaster_self = "You are a rank {rank} master of the minigun.",
-        str_weaponmaster = "They are a rank {rank} master of the minigun.",
-        str_trauma_self = "What little is left of your body has large holes punched through it, resembling a slice of swiss cheese.",
-        str_trauma = "What little is left of their body has large holes punched through it, resembling a slice of swiss cheese.",
-        str_kill = "**TKTKTKTKTKTKTKTKTK!!** {name_player} pushes their minigun barrel right up to {name_target}’s chest, unloading a full round of ammunition and knocking their lifeless corpse back a few yards from the sheer force of the bullets. They failed to outsmart bullet. {emote_skull}",
-        str_killdescriptor = "obliterated",
-        str_damage = "Cascades of bullet easily puncture and rupture {name_target}’s {hitzone}!!",
-        str_duel = "**...** {name_player} and {name_target} crouch close to the ground, throwing sandwiches unto the floor next to each other and repeating memetic voice lines ad nauseam.",
-        str_description = "It's a minigun.",
+		alias = [
+			"mini",
+			"gatlinggun"
+		],
+		str_crit = "**Critical hit!!** Round after round of bullets fly through {name_target}, inflicting irreparable damage!!",
+		str_miss = "**You missed!!** Despite the growing heap of used ammunition shells {name_player} has accrued, none of their bullets actually hit {name_target}!",
+		str_equip = "You equip the minigun.",
+		str_name = "minigun",
+		str_weapon = "a minigun",
+		str_weaponmaster_self = "You are a rank {rank} master of the minigun.",
+		str_weaponmaster = "They are a rank {rank} master of the minigun.",
+		str_trauma_self = "What little is left of your body has large holes punched through it, resembling a slice of swiss cheese.",
+		str_trauma = "What little is left of their body has large holes punched through it, resembling a slice of swiss cheese.",
+		str_kill = "**TKTKTKTKTKTKTKTKTK!!** {name_player} pushes their minigun barrel right up to {name_target}’s chest, unloading a full round of ammunition and knocking their lifeless corpse back a few yards from the sheer force of the bullets. They failed to outsmart bullet. {emote_skull}",
+		str_killdescriptor = "obliterated",
+		str_damage = "Cascades of bullet easily puncture and rupture {name_target}’s {hitzone}!!",
+		str_duel = "**...** {name_player} and {name_target} crouch close to the ground, throwing sandwiches unto the floor next to each other and repeating memetic voice lines ad nauseam.",
+		str_description = "It's a minigun.",
 		#str_reload = "You curse under your breath, before pulling a fresh belt of bullets from hammerspace and jamming it into your minigun’s hungry feed.",
-        #str_reload_warning = "**TKTKTKTKTKTK--** *wrrrrrr…* **SHIT!!** {name_player}’s minigun just inhaled the last of it’s belt, it’s out of bullets!!",
+		#str_reload_warning = "**TKTKTKTKTKTK--** *wrrrrrr…* **SHIT!!** {name_player}’s minigun just inhaled the last of it’s belt, it’s out of bullets!!",
 		str_scalp = " It looks more like a thick slice of swiss cheese than a scalp.",
 		fn_effect = wef_minigun,
 		price = 1000000,
 		vendors = [vendor_bazaar],
-		#classes= [weapon_class_ammo],
-		stat = stat_minigun_kills
+		classes= [weapon_class_captcha, weapon_class_heavy],
+		stat = stat_minigun_kills,
+		sap_cost = 15,
+		captcha_length = 10
 	),	
 	EwWeapon( # 7
 		id_weapon = weapon_id_bat,
@@ -2972,6 +3050,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** {name_player} has bashed {name_target} up real bad!",
 		str_miss = "**MISS!!** {name_player} swung wide and didn't even come close!",
 		str_equip = "You equip the bat with nails in it.",
+		str_name = "bat",
 		str_weaponmaster_self = "You are a rank {rank} master of the nailbat.",
 		str_weaponmaster = "They are a rank {rank} master of the nailbat.",
 		str_weapon = "a bat full of nails",
@@ -2987,7 +3066,10 @@ weapon_list = [
 		fn_effect = wef_bat,
 		price = 10000,
 		vendors = [vendor_dojo],
-		stat = stat_bat_kills
+		classes= [weapon_class_captcha],
+		stat = stat_bat_kills,
+		sap_cost = 2,
+		captcha_length = 2
 	),	
 	EwWeapon( # 8
 		id_weapon = weapon_id_brassknuckles,
@@ -2999,6 +3081,7 @@ weapon_list = [
 		str_crit = "***SKY UPPERCUT!!*** {name_player} executes an artificially difficult combo, rocketing their fist into the bottom of {name_target}’s jaw so hard that {name_target}’s colliding teeth brutally sever an inch off their own tongue!!",
 		str_miss = "**MISS!** {name_player} couldn't land a single blow!!",
 		str_equip = "You equip the brass knuckles.",
+		str_name = "brass knuckles",
 		str_weapon = "brass knuckles",
 		str_weaponmaster_self = "You are a rank {rank} master pugilist.",
 		str_weaponmaster = "They are a rank {rank} master pugilist.",
@@ -3013,7 +3096,10 @@ weapon_list = [
 		fn_effect = wef_brassknuckles,
 		price = 10000,
 		vendors = [vendor_dojo],
-		stat = stat_brassknuckles_kills
+		classes= [weapon_class_captcha],
+		stat = stat_brassknuckles_kills,
+		sap_cost = 1,
+		captcha_length = 2
 	),
 	EwWeapon( # 9
 		id_weapon = weapon_id_katana,
@@ -3026,6 +3112,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** {name_target} is cut deep!!",
 		str_miss = "",
 		str_equip = "You equip the katana.",
+		str_name = "katana",
 		str_weapon = "a katana",
 		str_weaponmaster_self = "You are a rank {rank} blademaster.",
 		str_weaponmaster = "They are a rank {rank} blademaster.",
@@ -3040,29 +3127,33 @@ weapon_list = [
 		fn_effect = wef_katana,
 		price = 10000,
 		vendors = [vendor_dojo],
-		stat = stat_katana_kills
+		classes= [weapon_class_captcha],
+		stat = stat_katana_kills,
+		sap_cost = 3,
+		captcha_length = 8
 	),
 	EwWeapon( # 10
-        id_weapon = weapon_id_broadsword,
-        alias = [
-            "sword",
-            "highlander",
-            "arawheapofiron",
+		id_weapon = weapon_id_broadsword,
+		alias = [
+			"sword",
+			"highlander",
+			"arawheapofiron",
 			"eyelander"
-        ],
+		],
   		str_crit = "Critical hit!! {name_player} screams at the top of their lungs and unleashes a devastating overhead swing that maims {name_target}.",
-        str_miss = "You missed! You grunt as your failed overhead swing sends ripples through the air.",
+		str_miss = "You missed! You grunt as your failed overhead swing sends ripples through the air.",
 		str_backfire = "You feel the bones in your wrists snap as you botch your swing with the heavy blade!! Fucking ouch dawg!",
 		str_equip = "You equip the broadsword.",
-        str_weapon = "a broadsword",
-        str_weaponmaster_self = "You are a rank {rank} berserker.",
-        str_weaponmaster = "They are a rank {rank} berserker.",
-        str_trauma_self = "A large dent resembling that of a half-chopped down tree appears on the top of your head.",
-        str_trauma = "A dent resembling that of a half-chopped down tree appears on the top of their head.",
-        str_kill = "{name_player} skewers {name_target} through the back to the hilt of their broadsword, before kicking their lifeless corpse onto the street corner in gruseome fashion. {name_player} screams at the top of their lungs. {emote_skull}",
-        str_killdescriptor = "slayed",
-        str_damage = "{name_target}'s {hitzone} is separated from their body!!",
-        str_duel = "SCHWNG SCHWNG! {name_player} and {name_target} scream at the top of their lungs to rehearse their battle cries.",
+		str_name = "broadsword",
+		str_weapon = "a broadsword",
+		str_weaponmaster_self = "You are a rank {rank} berserker.",
+		str_weaponmaster = "They are a rank {rank} berserker.",
+		str_trauma_self = "A large dent resembling that of a half-chopped down tree appears on the top of your head.",
+		str_trauma = "A dent resembling that of a half-chopped down tree appears on the top of their head.",
+		str_kill = "{name_player} skewers {name_target} through the back to the hilt of their broadsword, before kicking their lifeless corpse onto the street corner in gruseome fashion. {name_player} screams at the top of their lungs. {emote_skull}",
+		str_killdescriptor = "slayed",
+		str_damage = "{name_target}'s {hitzone} is separated from their body!!",
+		str_duel = "SCHWNG SCHWNG! {name_player} and {name_target} scream at the top of their lungs to rehearse their battle cries.",
 		str_description = "It's a broadsword.",
 		str_reload = "You summon strength and muster might from every muscle on your body to hoist your broadsword up for another swing.",
 		str_reload_warning = "**THUD...** {name_player}’s broadsword is too heavy, it’s blade has fallen to the ground!!",
@@ -3071,8 +3162,10 @@ weapon_list = [
 		clip_size = 1,
 		price = 10000,
 		vendors = [vendor_dojo],
-		classes = [weapon_class_ammo],
-		stat = stat_broadsword_kills
+		classes = [weapon_class_ammo, weapon_class_captcha, weapon_class_heavy],
+		stat = stat_broadsword_kills,
+		sap_cost = 12,
+		captcha_length = 4
 	),
 	EwWeapon( # 11
 		id_weapon = weapon_id_nunchucks,
@@ -3086,6 +3179,7 @@ weapon_list = [
 		str_crit = "**COMBO!** {name_player} strikes {name_target} with a flurry of 5 vicious blows!",
 		str_backfire = "**Whack!!** {name_player} fucks up their kung-fu routine and whacks themselves in the head with their own nun-chucks!!",
 		str_equip = "You equip the nun-chucks.",
+		str_name = "nun-chucks",
 		str_weapon = "nun-chucks",
 		str_weaponmaster_self = "You are a rank {rank} kung-fu master.",
 		str_weaponmaster = "They are a rank {rank} kung-fu master.",
@@ -3100,7 +3194,10 @@ weapon_list = [
 		fn_effect = wef_nunchucks,
 		price = 10000,
 		vendors = [vendor_dojo],
-		stat = stat_nunchucks_kills
+		classes= [weapon_class_captcha],
+		stat = stat_nunchucks_kills,
+		sap_cost = 4,
+		captcha_length = 2
 	),
 	EwWeapon( # 12
 		id_weapon = weapon_id_scythe,
@@ -3110,6 +3207,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** {name_target} is carved by the wicked curved blade!",
 		str_miss = "**MISS!!** {name_player}'s swings wide of the target!",
 		str_equip = "You equip the scythe.",
+		str_name = "scythe",
 		str_weapon = "a scythe",
 		str_weaponmaster_self = "You are a rank {rank} master of the scythe.",
 		str_weaponmaster = "They are a rank {rank} master of the scythe.",
@@ -3124,7 +3222,10 @@ weapon_list = [
 		fn_effect = wef_scythe,
 		price = 10000,
 		vendors = [vendor_dojo],
-		stat = stat_scythe_kills
+		classes= [weapon_class_captcha],
+		stat = stat_scythe_kills,
+		sap_cost = 6,
+		captcha_length = 4
 	),
 	EwWeapon( # 13	
 		id_weapon = weapon_id_yoyo,
@@ -3134,23 +3235,27 @@ weapon_list = [
 			"yoyos"
 		],
 		str_crit = "SMAAAASH!! {name_player} pulls off a modified Magic Drop, landing a critical hit on {name_target} just after the rejection!",
-        str_miss = "You missed! {name_player} misjudges their yo-yos trajectory and botches an easy trick.",
-        str_equip = "You equip the yo-yo.",
-        str_weaponmaster_self = "You are a rank {rank} master of the yo-yo.",
-        str_weaponmaster = "They are a rank {rank} master of the yo-yo.",
-        str_weapon = "a yo-yo",
-        str_trauma_self = "Simple yo-yo tricks caught even in your peripheral vision triggers intense PTSD flashbacks.",
-        str_trauma = "Simple yo-yo tricks caught even in their peripheral vision triggers intense PTSD flashbacks.",
-        str_kill = "{name_player} performs a modified Kwyjibo, effortlessly nailing each step before killing their opponent just ahead of the dismount.",
-        str_killdescriptor = "amazed",
-        str_damage = "{name_player} used {name_target}'s {hitzone} as a counterweight!!",
-        str_duel = "whhzzzzzz {name_player} and {name_target} practice trying to Walk the Dog for hours. It never clicks.",
+		str_miss = "You missed! {name_player} misjudges their yo-yos trajectory and botches an easy trick.",
+		str_equip = "You equip the yo-yo.",
+		str_name = "yo-yo",
+		str_weaponmaster_self = "You are a rank {rank} master of the yo-yo.",
+		str_weaponmaster = "They are a rank {rank} master of the yo-yo.",
+		str_weapon = "a yo-yo",
+		str_trauma_self = "Simple yo-yo tricks caught even in your peripheral vision triggers intense PTSD flashbacks.",
+		str_trauma = "Simple yo-yo tricks caught even in their peripheral vision triggers intense PTSD flashbacks.",
+		str_kill = "{name_player} performs a modified Kwyjibo, effortlessly nailing each step before killing their opponent just ahead of the dismount.",
+		str_killdescriptor = "amazed",
+		str_damage = "{name_player} used {name_target}'s {hitzone} as a counterweight!!",
+		str_duel = "whhzzzzzz {name_player} and {name_target} practice trying to Walk the Dog for hours. It never clicks.",
 		str_description = "It's a yo-yo.",
 		str_scalp = " It has a ball bearing hidden inside it. You can spin it like a fidget spinner.",
 		fn_effect = wef_yoyo,
 		price = 10000,
 		vendors = [vendor_dojo],
-		stat = stat_yoyo_kills
+		classes= [weapon_class_captcha],
+		stat = stat_yoyo_kills,
+		sap_cost = 1,
+		captcha_length = 2
 	),
 	EwWeapon( # 14
 		id_weapon = weapon_id_knives,
@@ -3164,6 +3269,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** {name_player}'s knife strikes a vital point!",
 		str_miss = "**MISS!!** {name_player}'s knife missed its target!",
 		str_equip = "You equip the throwing knives.",
+		str_name = "throwing knives",
 		str_weapon = "throwing knives",
 		str_weaponmaster_self = "You are a rank {rank} master of the throwing knife.",
 		str_weaponmaster = "They are a rank {rank} master of the throwing knife.",
@@ -3178,8 +3284,10 @@ weapon_list = [
 		fn_effect = wef_knives,
 		price = 500,
 		vendors = [vendor_dojo],
-		classes = [weapon_class_thrown],
-		stat = stat_knives_kills
+		classes = [weapon_class_thrown, weapon_class_captcha],
+		stat = stat_knives_kills,
+		sap_cost = 1,
+		captcha_length = 4
 	),
 	EwWeapon( # 15
 		id_weapon = weapon_id_molotov,
@@ -3193,6 +3301,7 @@ weapon_list = [
 		str_miss = "**A dud!!** the rag failed to ignite the molotov!",
 		str_crit = "{name_player}’s cocktail shatters at the feet of {name_target}, sending a shower of shattered shards of glass into them!!",
 		str_equip = "You equip the molotov cocktail.",
+		str_name = "molotov cocktail",
 		str_weapon = "molotov cocktails",
 		str_weaponmaster_self = "You are a rank {rank} master arsonist.",
 		str_weaponmaster = "They are a rank {rank} master arsonist.",
@@ -3207,34 +3316,39 @@ weapon_list = [
 		fn_effect = wef_molotov,
 		price = 500,
 		vendors = [vendor_dojo],
-		classes = [weapon_class_thrown, weapon_class_exploding],
-		stat = stat_molotov_kills
+		classes = [weapon_class_thrown, weapon_class_exploding, weapon_class_captcha],
+		stat = stat_molotov_kills,
+		sap_cost = 1,
+		captcha_length = 4
 	),
 	EwWeapon( # 16
 		id_weapon = weapon_id_grenades,
-        alias = [
-            "nades",
+		alias = [
+			"nades",
 			"grenade"
-        ],
-        str_crit = "**Critical hit!!** {name_target} is blown off their feet by the initial explosion, and lacerated by innumerable shards of shrapnel scattering themselves through their body!!",
-        str_miss = "**You missed!!** {name_player}’s poor aim sends their grenade into a nearby alleyway, it’s explosion eliciting a Wilhelm scream and the assumed death of an innocent passerby. LOL!!",
-        str_equip = "You equip the grenades.",
-        str_weapon = "a stack of grenades",
-        str_weaponmaster_self = "You are a rank {rank} master of the grenades.",
-        str_weaponmaster = "They are a rank {rank} master of the grenades.",
-        str_trauma_self = "Blast scars and burned skin are spread unevenly across your body.",
-        str_trauma = "Blast scars and burned skin are spread unevenly across their body.",
-        str_kill = "**KA-BOOM!!** {name_player} pulls the safety pin and holds their grenade just long enough to cause it to explode mid air, right in front of {name_target}’s face, blowing it to smithereens. {emote_skull}",
-        str_killdescriptor = "exploded",
-        str_damage = "{name_player}’s grenade explodes, sending {name_target}’s {hitzone} flying off their body!!",
-        str_duel = "**KA-BOOM!!** {name_player} and {name_target} pull the pin out of their grenades and hold it in their hands to get a feel for how long it takes for them to explode. They lose a few body parts in the process.",
+		],
+		str_crit = "**Critical hit!!** {name_target} is blown off their feet by the initial explosion, and lacerated by innumerable shards of shrapnel scattering themselves through their body!!",
+		str_miss = "**You missed!!** {name_player}’s poor aim sends their grenade into a nearby alleyway, it’s explosion eliciting a Wilhelm scream and the assumed death of an innocent passerby. LOL!!",
+		str_equip = "You equip the grenades.",
+		str_name = "grenades",
+		str_weapon = "a stack of grenades",
+		str_weaponmaster_self = "You are a rank {rank} master of the grenades.",
+		str_weaponmaster = "They are a rank {rank} master of the grenades.",
+		str_trauma_self = "Blast scars and burned skin are spread unevenly across your body.",
+		str_trauma = "Blast scars and burned skin are spread unevenly across their body.",
+		str_kill = "**KA-BOOM!!** {name_player} pulls the safety pin and holds their grenade just long enough to cause it to explode mid air, right in front of {name_target}’s face, blowing it to smithereens. {emote_skull}",
+		str_killdescriptor = "exploded",
+		str_damage = "{name_player}’s grenade explodes, sending {name_target}’s {hitzone} flying off their body!!",
+		str_duel = "**KA-BOOM!!** {name_player} and {name_target} pull the pin out of their grenades and hold it in their hands to get a feel for how long it takes for them to explode. They lose a few body parts in the process.",
 		str_description = "A stack of grenades.",
 		str_scalp = " It's covered in metallic shrapnel.",
 		fn_effect = wef_grenade,
 		price = 500,
 		vendors = [vendor_dojo],
-		classes = [weapon_class_thrown, weapon_class_exploding],
-		stat = stat_grenade_kills
+		classes = [weapon_class_thrown, weapon_class_exploding, weapon_class_captcha],
+		stat = stat_grenade_kills,
+		sap_cost = 1,
+		captcha_length = 4
 	),
 	EwWeapon( # 17
 		id_weapon = weapon_id_garrote,
@@ -3246,6 +3360,7 @@ weapon_list = [
 		str_crit = "**CRITICAL HIT!!** {name_player} got lucky and caught {name_target} completely unaware!!",
 		str_miss = "**MISS!** {name_player}'s target got away in time!",
 		str_equip = "You equip the garrotte wire.",
+		str_name = "garrote wire",
 		str_weapon = "a garrotte wire",
 		str_weaponmaster_self = "You are a rank {rank} master of the garrotte.",
 		str_weaponmaster = "They are a rank {rank} master of the garrotte.",
@@ -3260,7 +3375,8 @@ weapon_list = [
 		fn_effect = wef_garrote,
 		price = 10000,
 		vendors = [vendor_dojo],
-		stat = stat_garrote_kills
+		stat = stat_garrote_kills,
+		sap_cost = 5,
 	),
 	EwWeapon(  # 18
 		id_weapon = weapon_id_pickaxe,
@@ -3272,6 +3388,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** By sheer dumb luck, {name_player} manages to get a good hit off on {name_target}’s {hitzone}.",
 		str_miss = "**MISS!!** {name_player} is too weak to lift their pickaxe!",
 		str_equip = "You equip the pickaxe.",
+		str_name = "pickaxe",
 		str_weapon = "a pickaxe",
 		str_weaponmaster_self = "You are a rank {rank} coward of the pickaxe.",
 		str_weaponmaster = "They are a rank {rank} coward of the pickaxe.",
@@ -3285,7 +3402,9 @@ weapon_list = [
 		fn_effect = wef_tool,
 		str_description = "It's a pickaxe.",
 		acquisition = acquisition_smelting,
-		stat = stat_pickaxe_kills
+		stat = stat_pickaxe_kills,
+		sap_cost = 2,
+		captcha_length = 2
 	),
 	EwWeapon(  # 19
 		id_weapon = "fishingrod",
@@ -3300,6 +3419,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** By sheer dumb luck, {name_player} manages to get a good hit off on {name_target}’s {hitzone}.",
 		str_miss = "**MISS!!** {name_player} is too weak to cast their fishing rod!",
 		str_equip = "You equip the super fishing rod.",
+		str_name = "super fishing rod",
 		str_weapon = "a super fishing rod",
 		str_weaponmaster_self = "You are a rank {rank} coward of the super fishing rod.",
 		str_weaponmaster = "They are a rank {rank} coward of the super fishing rod.",
@@ -3313,9 +3433,11 @@ weapon_list = [
 		fn_effect = wef_tool,
 		str_description = "It's a super fishing rod.",
 		acquisition = acquisition_smelting,
-		stat = stat_fishingrod_kills
+		stat = stat_fishingrod_kills,
+		sap_cost = 2,
+		captcha_length = 2
 	),
-        EwWeapon(  # 20
+	EwWeapon(  # 20
 		id_weapon = weapon_id_bass,
 		alias = [
 			"bass",
@@ -3323,6 +3445,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** Through skilled swipes {name_player} manages to sharply strike {name_target}’s {hitzone}.",
 		str_miss = "**MISS!!** {name_player} swings and misses like a dumbass!",
 		str_equip = "You equip the bass guitar, a highly distorted and reverbed riff of unknown origin plays as you place the strap over your neck.",
+		str_name = "bass guitar",
 		str_weapon = "a bass guitar",
 		str_weaponmaster_self = "You are a rank {rank} master of the bass guitar.",
 		str_weaponmaster = "They are a rank {rank} master of the bass guitar.",
@@ -3336,9 +3459,11 @@ weapon_list = [
 		fn_effect = wef_bass,
 		str_description = "It's a bass guitar. All of its strings are completely out of tune and rusted.",
 		acquisition = acquisition_smelting,
-		stat = stat_bass_kills
+		stat = stat_bass_kills,
+		sap_cost = 2,
+		captcha_length = 2
 	),
-        EwWeapon(  # 21
+	EwWeapon(  # 21
 		id_weapon = weapon_id_umbrella,
 		alias = [
 			"umbrella",
@@ -3348,6 +3473,7 @@ weapon_list = [
 		str_crit = "**Critical hit!!** {name_player} briefly stuns {name_target} by opening their umbrella in their face, using the opportunity to score a devastating blow to their {hitzone}.",
 		str_miss = "**MISS!!** {name_player} fiddles with their umbrella, failing to open it!",
 		str_equip = "You equip the umbrella.",
+		str_name = "umbrella",
 		str_weapon = "an umbrella",
 		str_weaponmaster_self = "You are a rank {rank} master of the umbrella.",
 		str_weaponmaster = "They are a rank {rank} master of the umbrella.",
@@ -3363,7 +3489,9 @@ weapon_list = [
 		price = 100000,
 		vendors = [vendor_bazaar],
 		classes = [weapon_class_captcha, weapon_class_defensive],
-		stat = stat_umbrella_kills
+		stat = stat_umbrella_kills,
+		sap_cost = 1,
+		captcha_length = 4
 	),
 ]
 
@@ -3382,6 +3510,7 @@ def atf_fangs(ctn = None):
 	# Reskin of dual pistols
 
 	aim = (random.randrange(10) + 1)
+	ctn.sap_damage = 1
 
 	if aim == 1:
 		ctn.miss = True
@@ -3395,6 +3524,8 @@ def atf_talons(ctn = None):
 
 	ctn.miss = False
 	ctn.slimes_damage = int(0.85 * ctn.slimes_damage)
+	ctn.sap_damage = 0
+	ctn.sap_ignored = 10
 
 	if (random.randrange(10) + 1) == 10:
 		ctn.crit = True
@@ -3406,6 +3537,8 @@ def atf_raiderscythe(ctn = None):
 	ctn.enemy_data.change_slimes(n = (-ctn.slimes_spent * 0.33), source = source_self_damage)
 	ctn.slimes_damage = int(ctn.slimes_damage * 1.25)
 	aim = (random.randrange(10) + 1)
+	ctn.sap_damage = 0
+	ctn.sap_ignored = 5
 
 	if aim <= 2:
 		ctn.miss = True
@@ -3418,6 +3551,7 @@ def atf_gunkshot(ctn = None):
 	# Reskin of rifle
 
 	aim = (random.randrange(10) + 1)
+	ctn.sap_damage = 2
 
 	if aim <= 2:
 		ctn.miss = True
@@ -3430,6 +3564,7 @@ def atf_tusks(ctn = None):
 	# Reskin of bat
 
 	aim = (random.randrange(21) - 10)
+	ctn.sap_damage = 3
 	if aim <= -9:
 		ctn.miss = True
 		ctn.slimes_damage = 0
@@ -3445,6 +3580,8 @@ def atf_molotovbreath(ctn = None):
 	
 	dmg = ctn.slimes_damage
 	ctn.slimes_damage = int(ctn.slimes_damage * 0.75)
+	ctn.sap_damage = 0
+	ctn.sap_ignored = 10
 
 	aim = (random.randrange(10) + 1)
 
@@ -3452,7 +3589,7 @@ def atf_molotovbreath(ctn = None):
 
 	if aim <= 2:
 		ctn.backfire = True
-		ctn.enemy_data.change_slimes(n=-dmg, source=source_self_damage)
+		ctn.backfire_damage = dmg
 
 	elif aim == 3:
 		ctn.miss = True
@@ -3463,6 +3600,9 @@ def atf_molotovbreath(ctn = None):
 		ctn.slimes_damage *= 2
 			
 def atf_armcannon(ctn = None):
+	dmg = ctn.slimes_damage
+	ctn.sap_damage = 2
+
 	aim = (random.randrange(20) + 1)
 	
 	if aim <= 2:
@@ -3607,54 +3747,62 @@ attack_type_map = {}
 for attack_type in enemy_attack_type_list:
 	attack_type_map[attack_type.id_type] = attack_type
 
+# Weather IDs
+weather_sunny = "sunny"
+weather_rainy = "rainy"
+weather_windy = "windy"
+weather_lightning = "lightning"
+weather_cloudy = "cloudy"
+weather_snow = "snow"
+weather_foggy = "foggy"
 weather_bicarbonaterain = "bicarbonaterain"
 
 # All weather effects in the game.
 weather_list = [
 	EwWeather(
-		name = "sunny",
+		name = weather_sunny,
 		sunrise = "The smog is beginning to clear in the sickly morning sunlight.",
 		day = "The sun is blazing on the cracked streets, making the air shimmer.",
 		sunset = "The sky is darkening, the low clouds an iridescent orange.",
 		night = "The moon looms yellow as factories belch smoke all through the night."
 	),
 	EwWeather(
-		name = "rainy",
+		name = weather_rainy,
 		sunrise = "Rain gently beats against the pavement as the sky starts to lighten.",
 		day = "Rain pours down, collecting in oily rivers that run down sewer drains.",
 		sunset = "Distant thunder rumbles as it rains, the sky now growing dark.",
 		night = "Silverish clouds hide the moon, and the night is black in the heavy rain."
 	),
 	EwWeather(
-		name = "windy",
+		name = weather_windy,
 		sunrise = "Wind whips through the city streets as the sun crests over the horizon.",
 		day = "Paper and debris are whipped through the city streets by the winds, buffetting pedestrians.",
 		sunset = "The few trees in the city bend and strain in the wind as the sun slowly sets.",
 		night = "The dark streets howl, battering apartment windows with vicious night winds."
 	),
 	EwWeather(
-		name = "lightning",
+		name = weather_lightning,
 		sunrise = "An ill-omened morning dawns as lighting streaks across the sky in the sunrise.",
 		day = "Flashes of bright lightning and peals of thunder periodically startle the citizens out of their usual stupor.",
 		sunset = "Bluish white arcs of electricity tear through the deep red dusky sky.",
 		night = "The dark night periodically lit with bright whitish-green bolts that flash off the metal and glass of the skyscrapers."
 	),
 	EwWeather(
-		name = "cloudy",
+		name = weather_cloudy,
 		sunrise = "The dim morning light spreads timidly across the thickly clouded sky.",
 		day = "The air hangs thick, and the pavement is damp with mist from the clouds overhead.",
 		sunset = "The dusky light blares angry red on a sky choked with clouds and smog.",
 		night = "Everything is dark and still but the roiling clouds, reflecting the city's eerie light."
 	),
 	EwWeather(
-		name = "snow",
+		name = weather_snow,
 		sunrise = "The morning sun glints off the thin layer or powdery snow that blankets the city.",
 		day = "Flakes of snow clump together and whip through the bitter cold air in the winder wind.",
 		sunset = "The cold air grows colder as the sky darkens and the snow piles higher in the streets.",
 		night = "Icy winds whip through the city, white snowflakes glittering in the black of night."
 	),
 	EwWeather(
-		name = "foggy",
+		name = weather_foggy,
 		sunrise = "Fog hangs thick in the air, stubbornly refusing to dissipate as the sun clears the horizon.",
 		day = "You can barely see to the next block in the sickly greenish NLAC smog.",
 		sunset = "Visibility only grows worse in the fog as the sun sets and the daylight fades.",
@@ -5350,7 +5498,7 @@ food_list = [
 		str_name = 'Paradox Chocs',
 		str_eat = "You eat the Paradox Chocs. They don't taste all that good, but that's part of their charm, you think.",
 		str_desc = "A bag of chocolates. Almost all of them are shaped like the head of Paradox Crocs. Every bag also comes with a Koff head, a Seani head, and an ~~Ackro~~ Obama head.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_twixten,
@@ -5362,31 +5510,32 @@ food_list = [
 		str_name = 'Twixten',
 		str_eat = "You sink your teeth into the Twixten, working your way down the blade, and finally giving a huge bite into the hilt. *CRUNCH*",
 		str_desc = "A chocolate bar. It's shaped like a katana.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
-		id_food = item_id_sni,
+		id_food = item_id_snipercannon,
 		alias = [
-			"blatantracism",
+			"sniper",
+			"cannon",
 		],
 		recover_hunger = 100,
 		price = 100,
-		str_name = 'SNI-',
-		str_eat = "You take a bite out of your s... sn... ... ... SNI- *CHOMP*.",
-		str_desc = "A chocolate bar with wafers on the inside. You can't bring yourself to say the name out loud, though.",
-		acquisition = acquisition_trickortreating
+		str_name = 'Sniper Cannon',
+		str_eat = "You take a bite out of your Sniper Cannon bar.",
+		str_desc = "A chocolate bar with wafers on the inside. It's shaped like a bulky, rectangular version of the cannon found on the arm of the Unnerving Fighting Operator. On the back of the wrapper, there's some text that reads: 'We at Slimy Persuits had only the best intentions in our initial run of the [REDACTED] bar. We hope this rebranding will allow you to continue to enjoy our products without having to fear of blatant racism.'",
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
-		id_food = item_id_slimeybears,
+		id_food = item_id_slimybears,
 		alias = [
 			"bears",
 		],
 		recover_hunger = 80,
 		price = 100,
-		str_name = 'Slimey Bears',
-		str_eat = "You stash a fistfull of Slimey Bears right into your gullet, chewing them thoroughly.",
-		str_desc = "A packet of Slimey Bears. They come in a variety of colors, like purple, pink, green, and... yellow? Somehow this weirds you out a bit...",
-		acquisition = acquisition_trickortreating
+		str_name = 'Slimy Bears',
+		str_eat = "You stash a fistfull of Slimy Bears right into your gullet, chewing them thoroughly.",
+		str_desc = "A packet of Slimy Bears. They come in a variety of colors, like purple, pink, green, and... yellow? Somehow this weirds you out a bit...",
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_n8heads,
@@ -5398,7 +5547,7 @@ food_list = [
 		str_name = 'N8heads',
 		str_eat = "You chew on a N8head. It stopped tasting good long before you were done sinking your teeth into it, but you felt committed enough to finish what you started. Fuckin shill.",
 		str_desc = "A N8heads packet. They're bars of sour taffy, each with his signature shades imprinted onto them.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_turstwerthers,
@@ -5410,7 +5559,7 @@ food_list = [
 		str_name = 'Turstwerthers',
 		str_eat = "You shatter the Turstwerthers in your mouth, and the gooey caramel seeps out with every bite. Simply delight!",
 		str_desc = "A bag of Turstwerthers. They're hard caramels, shaped like elephant tusks.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_candybungis,
@@ -5422,7 +5571,7 @@ food_list = [
 		str_name = 'Candy (Bungis)',
 		str_eat = "You eat through the Candy (Bungis). Rather than imprint the temporary tattoo, you just shove the whole thing into your mouth and chew through it.",
 		str_desc = "A rolled up fruit snack. An layer of ink it has allows you to imprint an image of Sky (Bungis) onto your tongue.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_licoricelobsters,
@@ -5434,7 +5583,7 @@ food_list = [
 		str_name = 'Licorice Lobsters',
 		str_eat = "You chomp on the Licorice Lobsters. Their slight bittersweetness fills you with memories of days gone by.",
 		str_desc = "Yup. They're lobsters.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_chocolateslimecorpbadges,
@@ -5446,7 +5595,7 @@ food_list = [
 		str_name = 'Chocolate Slimecorp Badges',
 		str_eat = "You eat the Chocolate Slimecorp Badges. They taste surprisingly good. Maybe they're home-made?",
 		str_desc = "A plastic bag of chocolates, all resembling that infamous logo. Snapping them in half reveals a thin layer of graham cracker on the inside.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_poudrinpops,
@@ -5458,7 +5607,7 @@ food_list = [
 		str_name = 'Poudrin Pops',
 		str_eat = "You crush the poudrin pops with your teeth alone. You don't gain any slime, but they do taste amazing.",
 		str_desc = "Hard, green candy, meant to resemble Slime Poudrins. They're placed atop plastic rings, meant to be worn on your finger as you lick away.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_atms,
@@ -5470,7 +5619,7 @@ food_list = [
 		str_name = "ATm's",
 		str_eat = "You snack on the packet of ATm's. The hard shell pairs nicely with the milk chocolate on the inside.",
 		str_desc = "A packet of ATm's. They're all small, spherical chocolates with the @ symbol on them.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_seanis,
@@ -5482,7 +5631,7 @@ food_list = [
 		str_name = 'Seanis',
 		str_eat = "You chomp on the Seanis, slicing them in twain over and over. By the time you're finished with them, you've developed three cavities.",
 		str_desc = "A packet of hard candies. They're small tablets, colored in fuchsia, purple, and seafoam green.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_bustahfingers,
@@ -5494,7 +5643,7 @@ food_list = [
 		str_name = 'Bustahfingers',
 		str_eat = "You chomp on each half of the Bustahfingers heartily. The thick layer of chocolate is complimented perfectly by the core of peanut butter inside.",
 		str_desc = "A high quality candy bar, shaped like two nunchuks bonded together by a thin section of chocolate in the middle.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_marsbar,
@@ -5506,7 +5655,7 @@ food_list = [
 		str_name = 'Mars Bar',
 		str_eat = "You take a bite out of the mars bar. Shockingly, the nicotine on the inside pairs well with the creamy sweetness of the white chocolate shell.",
 		str_desc = "A small cylindrical candy bar, unsurprisingly shaped like a cigarette. What is surprising, however, is that it contains tiny traces of nicotine on the inside.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_juvieranchers,
@@ -5518,7 +5667,7 @@ food_list = [
 		str_name = 'Juvie Ranchers',
 		str_eat = "You suck on the Juvie Ranchers. The Dire Apple ones are particularly sour.",
 		str_desc = "A bag of hard candies, all flavored after the various crops of the city.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_swedishbassedgods,
@@ -5530,7 +5679,7 @@ food_list = [
 		str_name = 'Swedish Bassed Gods',
 		str_eat = "You chew through the Swedish Bassed Gods. Despite their unassuming appearance, they taste amazing. Truly a snack worthy of praise. Or would it be 'appraisal', in this case? Ah, forget it.",
 		str_desc = "A packet of gummies shaped like the Bassed God. On the back of the packet, there's an advertisement for the Fishing Guild.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food=item_id_endlesswarheads,
@@ -5542,7 +5691,7 @@ food_list = [
 		str_name='Endless Warheads',
 		str_eat="You chew through the Endless Warheads. Combining different colored ones inside your mouth sets off a burst of flavor. Sick!!",
 		str_desc="A bag of sour candies coated in sugar. They're all multicolored, and shaped like the familiar obelisk it gets its name from.",
-		acquisition=acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_chutzpahcherries,
@@ -5554,7 +5703,7 @@ food_list = [
 		str_name = 'Chutzpah Cherries',
 		str_eat = "You gobble up the Chutzpah Cherries. Who knew euthanasia could taste this good!",
 		str_desc = "A small box of dark red gummies, each one bearing the face of a slimeoid.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_slimesours,
@@ -5566,7 +5715,7 @@ food_list = [
 		str_name = 'Slime Sours',
 		str_eat = "You pop a few Slime Sours into your maw. They bubble in your mouth a bit, almost like they're carbonated or something. Luckily they taste excellent, and seemingly have no connection with the death raining from above.",
 		str_desc = "A small plastic bag of gumdrops, each as green as slime itself. Apparently they're made entirely by hand.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_munchies,
@@ -5578,7 +5727,7 @@ food_list = [
 		str_name = 'Munchies',
 		str_eat = "You gorge yourself on the Munchies. What seemed like such a basic snack item reveals itself to be incredibly addictive. Before you know it, the bag is empty, leaving you to reflect on your gluttony.",
 		str_desc = "A bag of crackers, with a thin layer of cream in the middle. They're all shaped like jester hats.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_magickspatchkids,
@@ -5590,7 +5739,7 @@ food_list = [
 		str_name = 'Magicks Patch Kids',
 		str_eat = "You munch on the Magicks Patch Kids. Sour. Sweet. !dab.",
 		str_desc = "People are rather split on these. Some find them too sour, while others claim it to have an 'acquired taste'.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_krakel,
@@ -5602,7 +5751,7 @@ food_list = [
 		str_name = 'Krakel',
 		str_eat = "You take a large bite out of the Krakel bar. The rice lining the interior gives it a nice texture, and offsets the bitterness of the dark chocolate a bit.",
 		str_desc = "A thick slab of dark chocolate. An engraving on the back reads 'SLURP SLIME, BUSTERS'. Go figure.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_strauberryshortcakes,
@@ -5614,7 +5763,7 @@ food_list = [
 		str_name = 'Strauberry Shortcakes',
 		str_eat = "You toss the shortcakes into your mouth one at a time, savoring every bite. Even though they're manufactured, somehow you feel like a lot of love went into making them. Maybe it's just because of all the sugar.",
 		str_desc = "A packet containing two small pastries. An anchor symbol made of pink frosting is drawn onto both of them.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = item_id_n3crunch,
@@ -5626,7 +5775,7 @@ food_list = [
 		str_name = 'N3 Crunch',
 		str_eat = "You bite through the N3 Crunch bar. It's just your basic chocolate bar, with no outstanding appeal other than the engraving on the front.",
 		str_desc = "A chocolate bar popular with fans of Slimecorp. Each bar has an engraving of N3 on it. You try not to think about what people would do with these things behind closed doors.",
-		acquisition = acquisition_trickortreating
+		vendors = [vendor_slimypersuits]
 	),
 	EwFood(
 		id_food = "sourpussbread",
@@ -5641,6 +5790,20 @@ food_list = [
 		str_eat = "You chomp through the loaf of sourpuss bread. Somehow you feel like it would taste better if it was toasted.",
 		str_desc = "A loaf of bread. The likeness of some reptile is planted on the bag containing it. Apparently it's from 'Bowser', but who the fuck that is, you've got no clue.",
 		vendors = [vendor_pizzahut]
+	),
+	EwFood(
+		id_food = item_id_seaweedjoint,
+		alias = [
+			"joint",
+			"weed",
+			"blunt",
+			"doobie",
+		],
+		recover_hunger = 0,
+		str_name = 'Seaweed Joint',
+		str_eat = "You light up your Seaweed and begin to smoke it. Congratulations! You're now high. You catch fish twice as often, but food is half as effective. This lasts for 10 minutes.",
+		str_desc = "A joint made up of dankwheat and seaweed bartered with Captain Albert Alexander. Wait a minute, does that make the good Captain your drug dealer? Hell yeah.",
+		acquisition = acquisition_smelting
 	),
 ]
 
@@ -8556,10 +8719,10 @@ poi_list = [
 			"slimeoid"
 		],
 		str_name = "SlimeCorp Slimeoid Laboratory",
-		str_desc = "Huh, this is weird.\n\nUsually, this lobby is full of researchers scurrying about every which way, with some unpaid intern roleplaying receptionist. But… everything is quiet and dark, not a soul in sight. Where’d everybody go?\n\nIt looks like the elevator is working, at least. Alas, it requires you to enter an identification number, presumably to confirm you really work for SlimeCorp and aren’t a random juvenile who teleported into this place while it was closed. You’re pretty sure you remember getting your hands on an identification card a long, long time ago. Wonder if it’ll work?\n\n*Use the !verify command followed by the correct identification number to activate the elevator.*",
+		str_desc = "A nondescript building containing mysterious SlimeCorp industrial equipment. Large glass tubes and metallic vats seem to be designed to serve as incubators. There is a notice from SlimeCorp on the entranceway explaining the use of its equipment. Use !instructions to read it.\nPast countless receptionists' desks, Slimeoid incubation tubes, legal waivers, and down at least one or two secured elevator shafts, lay several mutation test chambers. All that wait for you in these secluded rooms is a reclined medical chair with an attached IV bag and the blinding light of a futuristic neon LED display which has a hundred different PoweShell windows open that are all running Discord bots. If you choose to tinker with mutations, a SlimeCorp employee will take you to one of these rooms and inform you of the vast and varied ways they can legally fuck with your body's chemistry.\n\nExits into Brawlden.",
 		channel = channel_slimeoidlab,
 		role = "Slimeoid Lab",
-		coord = (64, 6),
+		coord = (67, 8),
 		pvp = False,
 		is_subzone = True,
 		mother_district = poi_id_brawlden
@@ -9657,59 +9820,26 @@ poi_list = [
 		mother_district = poi_id_glocksbury,
 		is_subzone = True
 	),
-	# TODO: Remove after Double Halloween
-	EwPoi( # RP City
-		id_poi = poi_id_rpcity,
-		alias = [
-			"rp",
-			"rp city",
-			"roleplay city",
-			"rpc",
-			"costume store",
-			"costumestore",
+	EwPoi( # Slimy Persuits
+		id_poi=poi_id_slimypersuits,
+		alias=[
+			"sp",
+			"slimypersuits",
+			"slimeypersuits",
+			"candystore",
+			"candyshop",
+			"candy store",
+			"candy shop",
 		],
-		str_name = "RP City",
-		str_desc = "This place gives you the fucking creeps. A run-down shell of its former self, the RP City store has been long forgotten by most of the residents of NLACakaNM, but every Double Halloween, it somehow comes crawling back. All the amenities and costumes are ragged and decrepit, but it seems there's still a fresh supply of costume creation kits. Oh yeah, the register is also manned by a ghost, because why wouldn't it be. He doesn't seem to mind you browsing though, you figure he's just here to collect a paycheck. Such is life... er... the afterlife, rather.",
-		coord = (63, 18),
-		pvp = False,
-		vendors = [vendor_rpcity],
-		channel = "rp-city",
-		role = "RP City",
-		mother_district = poi_id_littlechernobyl,
-		is_subzone = True
-	),
-	EwPoi(  # Underworld Subway Station
-		id_poi = poi_id_underworld_subway_station,
-		alias = [
-			"underworldsubwaystation",
-			"uws",
-			"us"
-		],
-		str_name = "The Underworld Subway Station",
-		str_desc = str_generic_subway_station_description + "\n\nExits into The Underworld.",
-		coord = (63, 44),
-		channel = "underworld-subway-station",
-		role = "Underworld Subway Station",
-		pvp = False,
-		is_subzone = True,
-		mother_district = poi_id_underworld,
-		is_transport_stop = True,
-		transport_lines = set()
-	),
-	EwPoi( # The Underworld
-		id_poi = poi_id_underworld,
-		alias = [
-			"uw",
-			"undertale",
-			"underground",
-		],
-		str_name = "The Underworld, last stop of the White Line",
-		str_desc = "A cave underneath the city, well-lit by trash can bonfires scattered about. The walls are decorated with crude depictions of ENDLESS WAR. Strangely enough, there's a punching bag off in the distance, with what looks to be a picture of Phoebus taped onto it.",
-		coord = (63, 46),
-		channel = "the-underworld",
-		role = "Underworld",
+		str_name="Slimy Persuits",
+		str_desc="It's a vintage style candy store, and on top of that an ice-cream parlour. Sugary delicacies line the displays, giving the whole place an inviting presence and sweet scent. One of the signs on the walls tells of their signature product, the Slime Sours. Apprently they're made almost entirely by hand, and a lot of the other products in the store seem to fit that bill as well. In a post-apocalyptic hellscape like NLACakaNM, it seems some traditions have still survived.",
+		coord=(85, 12),
 		pvp=False,
-		is_capturable=False,
+		vendors=[vendor_slimypersuits],
+		channel="slimy-persuits",
+		role="Slimy Persuits",
+		mother_district=poi_id_newnewyonkers,
+		is_subzone=True
 	),
 	EwPoi(  # Ferry
 		id_poi = poi_id_ferry,
@@ -9826,19 +9956,18 @@ poi_list = [
 		default_line = transport_line_subway_blue_westbound,
 		default_stop = poi_id_afb_subway_station
 	),
-	# TODO: Comment back in after Double Halloween
-	EwPoi(  # Subway train on the white line
-		id_poi = poi_id_subway_white01,
-		str_name = "A Subway Train",
-		str_desc = str_generic_subway_description, # TODO: add description
-		channel = channel_subway_white01,
-		role = "Subway Train W-01",
-		pvp = False,
-		is_transport = True,
-		transport_type = transport_type_subway,
-		default_line = transport_line_subway_white_eastbound,
-		default_stop = poi_id_dt_subway_station
-	),
+	# EwPoi(  # Subway train on the white line
+	# 	id_poi = poi_id_subway_white01,
+	# 	str_name = "A Subway Train",
+	# 	str_desc = str_generic_subway_description, # TODO: add description
+	# 	channel = channel_subway_white01,
+	# 	role = "Subway Train W-01",
+	# 	pvp = False,
+	# 	is_transport = True,
+	# 	transport_type = transport_type_subway,
+	# 	default_line = transport_line_subway_white_eastbound,
+	# 	default_stop = poi_id_dt_subway_station
+	# ),
 	EwPoi(  # Blimp
 		id_poi = poi_id_blimp,
 		alias = [
@@ -10567,7 +10696,6 @@ poi_list = [
 	),
 
 ]
-poi_list += ewdebug.debugpois
 
 debugroom = ewdebug.debugroom
 debugroom_short = ewdebug.debugroom_short
@@ -10640,7 +10768,7 @@ transport_lines = [
 			"ferrytovagrantscorner",
 			"ferrytovagrants",
 			"ferrytovc"
-		    ],
+			],
 		first_stop = poi_id_wt_port,
 		last_stop = poi_id_vc_port,
 		next_line = transport_line_ferry_vc_to_wt,
@@ -10648,7 +10776,7 @@ transport_lines = [
 		schedule = {
 			poi_id_wt_port : [60, poi_id_slimesea],
 			poi_id_slimesea : [120, poi_id_vc_port]
-		    }
+			}
 
 		),
 	EwTransportLine( # ferry line from vagrant's corner to wreckington
@@ -10660,7 +10788,7 @@ transport_lines = [
 			"ferrytowreckington",
 			"ferrytowreck",
 			"ferrytowt"
-		    ],
+			],
 		first_stop = poi_id_vc_port,
 		last_stop = poi_id_wt_port,
 		next_line = transport_line_ferry_wt_to_vc,
@@ -10668,7 +10796,7 @@ transport_lines = [
 		schedule = {
 			poi_id_vc_port : [60, poi_id_slimesea],
 			poi_id_slimesea : [120, poi_id_wt_port]
-		    }
+			}
 
 		),
 	EwTransportLine( # yellow subway line from south sleezeborough to arsonbrook
@@ -10680,7 +10808,7 @@ transport_lines = [
 			"yellowtoarsonbrook",
 			"yellowtoarson",
 			"yellowtoab"
-		    ],
+			],
 		first_stop = poi_id_ssb_subway_station,
 		last_stop = poi_id_ab_subway_station,
 		next_line = transport_line_subway_yellow_southbound,
@@ -10690,7 +10818,7 @@ transport_lines = [
 			poi_id_kb_subway_station : [20, poi_id_dt_subway_station],
 			poi_id_dt_subway_station : [20, poi_id_sb_subway_station],
 			poi_id_sb_subway_station : [20, poi_id_ab_subway_station]
-		    }
+			}
 
 		),
 	EwTransportLine( # yellow subway line from arsonbrook to south sleezeborough
@@ -10702,7 +10830,7 @@ transport_lines = [
 			"yellowtosouthsleezeborough",
 			"yellowtosouthsleeze",
 			"yellowtossb"
-		    ],
+			],
 		first_stop = poi_id_ab_subway_station,
 		last_stop = poi_id_ssb_subway_station,
 		next_line = transport_line_subway_yellow_northbound,
@@ -10712,7 +10840,7 @@ transport_lines = [
 			poi_id_sb_subway_station : [20, poi_id_dt_subway_station],
 			poi_id_dt_subway_station : [20, poi_id_kb_subway_station],
 			poi_id_kb_subway_station : [20, poi_id_ssb_subway_station]
-		    }
+			}
 
 		),
 	EwTransportLine( # red subway line from cratersville to toxington
@@ -10724,7 +10852,7 @@ transport_lines = [
 			"redtotoxington",
 			"redtotox",
 			"redtott"
-		    ],
+			],
 		first_stop = poi_id_cv_subway_station,
 		last_stop = poi_id_tt_subway_station,
 		next_line = transport_line_subway_red_southbound,
@@ -10737,7 +10865,7 @@ transport_lines = [
 			poi_id_ck_subway_station : [20, poi_id_gd_subway_station],
 			poi_id_gd_subway_station : [20, poi_id_ah_subway_station],
 			poi_id_ah_subway_station : [20, poi_id_tt_subway_station]
-		    }
+			}
 
 		),
 	EwTransportLine( # red subway line from toxington to cratersville
@@ -10749,7 +10877,7 @@ transport_lines = [
 			"redtocratersville",
 			"redtocraters",
 			"redtocv"
-		    ],
+			],
 		first_stop = poi_id_tt_subway_station,
 		last_stop = poi_id_cv_subway_station,
 		next_line = transport_line_subway_red_northbound,
@@ -10762,7 +10890,7 @@ transport_lines = [
 			poi_id_dt_subway_station : [20, poi_id_rr_subway_station],
 			poi_id_rr_subway_station : [20, poi_id_wt_subway_station],
 			poi_id_wt_subway_station : [20, poi_id_cv_subway_station]
-		    }
+			}
 
 		),
 	EwTransportLine( # green subway line from smogsburg to west glocksbury
@@ -10774,7 +10902,7 @@ transport_lines = [
 			"greentosmogsburg",
 			"greentosmogs",
 			"greentosb"
-		    ],
+			],
 		first_stop = poi_id_wgb_subway_station,
 		last_stop = poi_id_sb_subway_station,
 		next_line = transport_line_subway_green_westbound,
@@ -10785,7 +10913,7 @@ transport_lines = [
 			poi_id_nsb_subway_station : [20, poi_id_kb_subway_station],
 			poi_id_kb_subway_station : [20, poi_id_dt_subway_station],
 			poi_id_dt_subway_station : [20, poi_id_sb_subway_station]
-		    }
+			}
 
 		),
 	EwTransportLine( # green subway line from west glocksbury to smogsburg
@@ -10797,7 +10925,7 @@ transport_lines = [
 			"greentowestglocksbury",
 			"greentowestglocks",
 			"greentowgb"
-		    ],
+			],
 		first_stop = poi_id_sb_subway_station,
 		last_stop = poi_id_wgb_subway_station,
 		next_line = transport_line_subway_green_eastbound,
@@ -10807,7 +10935,7 @@ transport_lines = [
 			poi_id_dt_subway_station : [20, poi_id_kb_subway_station],
 			poi_id_kb_subway_station : [20, poi_id_gb_subway_station],
 			poi_id_gb_subway_station : [20, poi_id_wgb_subway_station]
-		    }
+			}
 
 		),
 	EwTransportLine( # blue subway line from downtown to assault flats beach
@@ -10820,7 +10948,7 @@ transport_lines = [
 			"bluetoassaultflats",
 			"bluetobeach",
 			"bluetoafb"
-		    ],
+			],
 		first_stop = poi_id_dt_subway_station,
 		last_stop = poi_id_afb_subway_station,
 		next_line = transport_line_subway_blue_westbound,
@@ -10830,7 +10958,7 @@ transport_lines = [
 			poi_id_gld_subway_station : [20, poi_id_jr_subway_station],
 			poi_id_jr_subway_station : [20, poi_id_vc_subway_station],
 			poi_id_vc_subway_station : [20, poi_id_afb_subway_station]
-		    }
+			}
 
 		),
 	EwTransportLine( # blue subway line from assault flats beach to downtown
@@ -10841,7 +10969,7 @@ transport_lines = [
 			"westblue",
 			"bluetodowntown",
 			"bluetodt"
-		    ],
+			],
 		first_stop = poi_id_afb_subway_station,
 		last_stop = poi_id_dt_subway_station,
 		next_line = transport_line_subway_blue_eastbound,
@@ -10851,49 +10979,48 @@ transport_lines = [
 			poi_id_vc_subway_station : [20, poi_id_jr_subway_station],
 			poi_id_jr_subway_station : [20, poi_id_gld_subway_station],
 			poi_id_gld_subway_station : [20, poi_id_dt_subway_station]
-		    }
+			}
 
 		),
-	# TODO: Comment back in after Double Halloween
-	EwTransportLine( # white subway line from downtown to juvies row
-		id_line = transport_line_subway_white_eastbound,
-		alias = [
-			"whiteeastline",
-			"whiteeast",
-			"eastwhite",
-			"whitetojuviesrow",
-			"whitetojuvies",
-			"whitetojr"
-		    ],
-		first_stop = poi_id_underworld_subway_station,
-		last_stop = poi_id_jr_subway_station,
-		next_line = transport_line_subway_white_westbound,
-		str_name = "The white subway line towards Juvie's Row",
-		schedule = {
-			poi_id_underworld_subway_station : [20, poi_id_dt_subway_station],
-			poi_id_dt_subway_station : [20, poi_id_rr_subway_station],
-			poi_id_rr_subway_station : [20, poi_id_jr_subway_station]
-		    }
-		),
-	EwTransportLine( # white subway line from juvies row to downtown
-		id_line = transport_line_subway_white_westbound,
-		alias = [
-			"whitewestline",
-			"whitewest",
-			"westwhite",
-			"whitetounderworld",
-			"whitetouw"
-		    ],
-		first_stop = poi_id_jr_subway_station,
-		last_stop = poi_id_underworld_subway_station,
-		next_line = transport_line_subway_white_eastbound,
-		str_name = "The white subway line towards The Underworld",
-		schedule = {
-			poi_id_jr_subway_station : [20, poi_id_rr_subway_station],
-			poi_id_rr_subway_station : [20, poi_id_dt_subway_station],
-			poi_id_dt_subway_station : [20, poi_id_underworld_subway_station],
-		    }
-		),
+	# EwTransportLine( # white subway line from downtown to juvies row
+	# 	id_line = transport_line_subway_white_eastbound,
+	# 	alias = [
+	# 		"whiteeastline",
+	# 		"whiteeast",
+	# 		"eastwhite",
+	# 		"whitetojuviesrow",
+	# 		"whitetojuvies",
+	# 		"whitetojr"
+	# 	    ],
+	# 	first_stop = poi_id_underworld_subway_station,
+	# 	last_stop = poi_id_jr_subway_station,
+	# 	next_line = transport_line_subway_white_westbound,
+	# 	str_name = "The white subway line towards Juvie's Row",
+	# 	schedule = {
+	# 		poi_id_underworld_subway_station : [20, poi_id_dt_subway_station],
+	# 		poi_id_dt_subway_station : [20, poi_id_rr_subway_station],
+	# 		poi_id_rr_subway_station : [20, poi_id_jr_subway_station]
+	# 	    }
+	# 	),
+	# EwTransportLine( # white subway line from juvies row to downtown
+	# 	id_line = transport_line_subway_white_westbound,
+	# 	alias = [
+	# 		"whitewestline",
+	# 		"whitewest",
+	# 		"westwhite",
+	# 		"whitetounderworld",
+	# 		"whitetouw"
+	# 	    ],
+	# 	first_stop = poi_id_jr_subway_station,
+	# 	last_stop = poi_id_underworld_subway_station,
+	# 	next_line = transport_line_subway_white_eastbound,
+	# 	str_name = "The white subway line towards The Underworld",
+	# 	schedule = {
+	# 		poi_id_jr_subway_station : [20, poi_id_rr_subway_station],
+	# 		poi_id_rr_subway_station : [20, poi_id_dt_subway_station],
+	# 		poi_id_dt_subway_station : [20, poi_id_underworld_subway_station],
+	# 	    }
+	# 	),
 	EwTransportLine( # blimp line from dreadford to assault flats beach
 		id_line = transport_line_blimp_df_to_afb,
 		alias = [
@@ -10905,7 +11032,7 @@ transport_lines = [
 			"blimptoassaultflats",
 			"blimptobeach",
 			"blimptoafb"
-		    ],
+			],
 		first_stop = poi_id_df_blimp_tower,
 		last_stop = poi_id_afb_blimp_tower,
 		next_line = transport_line_blimp_afb_to_df,
@@ -10918,7 +11045,7 @@ transport_lines = [
 			poi_id_downtown : [40, poi_id_greenlightdistrict],
 			poi_id_greenlightdistrict : [40, poi_id_vagrantscorner],
 			poi_id_vagrantscorner : [40, poi_id_afb_blimp_tower]
-		    }
+			}
 
 		),
 	EwTransportLine( # blimp line from assault flats beach to dreadford
@@ -10930,7 +11057,7 @@ transport_lines = [
 			"blimptodreadford",
 			"blimptodread",
 			"blimptodf"
-		    ],
+			],
 		first_stop = poi_id_afb_blimp_tower,
 		last_stop = poi_id_df_blimp_tower,
 		next_line = transport_line_blimp_df_to_afb,
@@ -10943,7 +11070,7 @@ transport_lines = [
 			poi_id_krakbay : [40, poi_id_northsleezeborough],
 			poi_id_northsleezeborough : [40, poi_id_jaywalkerplain],
 			poi_id_jaywalkerplain : [40, poi_id_df_blimp_tower]
-		    }
+			}
 
 		)
 ]
@@ -11629,7 +11756,7 @@ smelting_recipe_list = [
 			"fag",
 		],
 		ingredients = {
-		    item_id_stick : 3
+			item_id_stick : 3
 
 		},
 		products = ['faggot']
@@ -11642,7 +11769,7 @@ smelting_recipe_list = [
 			"dfag",
 		],
 		ingredients = {
-		    item_id_faggot : 2
+			item_id_faggot : 2
 		},
 		products = ['doublefaggot']
 	),
@@ -11746,18 +11873,23 @@ smelting_recipe_list = [
 		},
 		products = ['leatherbed']
 	),
-    # TODO: Remove after Double Halloween
-    EwSmeltingRecipe(
-        id_recipe = "ticket",
-        str_name = "Ticket to the White Line",
-        alias = [
-            "tickettohell",
-        ],
-        ingredients = {
-            item_id_doublehalloweengrist: 100,
-        },
-        products = ['ticket']
-    )
+	EwSmeltingRecipe(
+		id_recipe = "seaweedjoint",
+		str_name = "a seaweed joint",
+		alias = [
+			"joint",
+			"seaweed",
+			"weed",
+			"doobie",
+			"blunt"
+		],
+		ingredients = {
+			'seaweed' : 3,
+			'dankwheat': 1,
+			item_id_slimepoudrin : 1,
+		},
+		products = ['seaweedjoint']
+	),
 ]
 smelting_recipe_list += ewdebug.debugrecipes
 
@@ -13018,7 +13150,7 @@ mutations = [
 		id_mutation = mutation_id_thickerthanblood,
 		str_describe_self = "Unnatural amounts of blood rush through your body, causing grotesquely large veins to bulge out of your head and arms frequently, due to Thicker Than Blood.",
 		str_describe_other = "Unnatural amounts of blood rush through their body, causing grotesquely large veins to bulge out of their head and arms frequently, due to Thicker Than Blood.",
-		str_acquire = "Your face swells with unnatural amounts of blood, developing hideously grotesque, bulging veins in the process. You begin to foam at the mouth, gnashing your teeth and longing for the thrill of the hunt. You have developed the mutation Thicker Than Blood. On a fatal blow, immediately receive the opponent’s remaining slime. ",
+		str_acquire = "Your face swells with unnatural amounts of blood, developing hideously grotesque, bulging veins in the process. You begin to foam at the mouth, gnashing your teeth and longing for the thrill of the hunt. You have developed the mutation Thicker Than Blood. On a fatal blow, immediately receive the opponent’s remaining slime. Its effects are diminished on hunted enemies, however.",
 		),
 	EwMutationFlavor(
 		id_mutation = mutation_id_fungalfeaster,
@@ -13114,7 +13246,7 @@ mutations = [
 		id_mutation = mutation_id_chameleonskin,
 		str_describe_self = "Your skin quickly adjusts and camouflages you in your current surroundings due to Chameleon Skin.",
 		str_describe_other = "Their skin quickly adjusts and camouflages them in their current surroundings due to Chameleon Skin.",
-		str_acquire = "You feel a scraping sensation all over your body, like you’re being sunburned and skinned alive at the same exact time. You begin to change hue rapidly, flipping through a thousand different colors, patterns, and textures. Every individual minor change in value across your entire body feels like you’re being dismembered. This transpires for several agonizing seconds before your body settles on a perfect recreation of your current surroundings. For all intents and purposes, you are transparent. You have developed the mutation Chameleon Skin. While offline, you can move and scout other districts. You cannot be scouted.",
+		str_acquire = "You feel a scraping sensation all over your body, like you’re being sunburned and skinned alive at the same exact time. You begin to change hue rapidly, flipping through a thousand different colors, patterns, and textures. Every individual minor change in value across your entire body feels like you’re being dismembered. This transpires for several agonizing seconds before your body settles on a perfect recreation of your current surroundings. For all intents and purposes, you are transparent. You have developed the mutation Chameleon Skin. While offline, you can move and scout other districts and cannot be scouted.",
 		),
 	EwMutationFlavor(
 		id_mutation = mutation_id_patriot,
@@ -13322,9 +13454,9 @@ stock_names = {
 
 #  Stock emotes
 stock_emotes = {
-    stock_kfc : emote_kfc,
-    stock_pizzahut : emote_pizzahut,
-    stock_tacobell : emote_tacobell
+	stock_kfc : emote_kfc,
+	stock_pizzahut : emote_pizzahut,
+	stock_tacobell : emote_tacobell
 }
 # A map of vendor names to their items.
 vendor_inv = {}
@@ -13539,30 +13671,12 @@ for m in cosmetic_items_list:
 	else:
 		pass
 
-# TODO: Remove after Double Halloween
 # Gather all the items that can be the result of trick-or-treating.
 trickortreat_results = []
 
 for t in food_list:
 	if t.acquisition == acquisition_trickortreating:
 		trickortreat_results.append(t)
-	else:
-		pass
-
-# Gather the Halloween Grist
-grist_results = []
-
-for g in item_list:
-	if g.context == 'dhgrist':
-		grist_results.append(g)
-	else:
-		pass
-	
-# Gather the Medallion
-medallion_results = []
-for m in cosmetic_items_list:
-	if m.ingredients == 'HorsemanSoul':
-		medallion_results.append(m)
 	else:
 		pass
 
@@ -13589,8 +13703,15 @@ status_ghostbust_id = "ghostbust"
 status_stunned_id = "stunned"
 status_repelled_id = "repelled"
 status_repelaftereffects_id = "repelaftereffects"
+status_evasive_id = "evasive"
+status_taunted_id = "taunted"
+status_aiming_id = "aiming"
+status_sapfatigue_id = "sapfatigue"
+status_rerollfatigue_id = "rerollfatigue"
+status_high_id = "high"
 
 time_expire_burn = 12
+time_expire_high = 10 * 60 # 10 minutes
 
 time_expire_repel_base = 60 * 60 * 3 # 3 hours
 
@@ -13629,6 +13750,43 @@ status_effect_list = [
 		str_acquire = 'You try and shake off the body spray, but its stench still lingers, if only for a brief moment.',
 		str_describe = 'Their surroundings give off a slightly foul odor.',
 		str_describe_self = 'Your surroundings give off a slightly foul odor.'
+	),
+	EwStatusEffectDef(
+		id_status = status_high_id,
+		time_expire = time_expire_high,
+		str_describe = "They are as high as a kite.",
+		str_describe_self = "You are as high as a kite."
+	),
+	EwStatusEffectDef(
+		id_status = status_evasive_id,
+		time_expire = 10,
+		str_describe = "They have assumed an evasive stance.",
+		str_describe_self = "You have assumed an evasive stance.",
+		miss_mod = 0.25
+	),
+	EwStatusEffectDef(
+		id_status = status_taunted_id,
+		time_expire = 10,
+		str_describe = "They are fuming with rage.",
+		str_describe_self = "You are fuming with rage.",
+		miss_mod_self = 0.25
+	),
+	EwStatusEffectDef(
+		id_status = status_aiming_id,
+		time_expire = 10,
+		str_describe = "They are taking careful aim.",
+		str_describe_self = "You are taking careful aim.",
+		miss_mod_self = -0.1,
+		crit_mod_self = 0.2
+	),
+	EwStatusEffectDef(
+		id_status = status_sapfatigue_id,
+		time_expire = 60,
+		str_describe = "They are suffering from sap fatigue.",
+		str_describe_self = "You are suffering from sap fatigue.",
+	),
+	EwStatusEffectDef(
+		id_status = status_rerollfatigue_id,
 	),
 ]
 
@@ -13694,7 +13852,7 @@ help_responses = {
 	# Introductions, part 1
 	"gangs":"**Gang Violence** is the center focus of **Rowdy Fuckers Cop Killers' ENDLESS WAR**. Enlisting in a gang allows you to attack other gang members, juveniles, ghosts, and slime beasts with the **'!kill'** command. To enlist in a gang, use **'!enlist'**, provided you also have at least 50,000 slime on hand. However, a member of that gang must use **'!vouch'** for you beforehand. Enlisting will permanently affiliate you with that gang, unless you are !pardon'd by the **ROWDY FUCKER** (Munchy), or the **COP KILLER** (Ben Saint). You may use **'!renounce'** to return to the life of a juvenile, but you will lose half of your current slime, and you will still be affiliated with that gang, thus disallowing you from entering the enemy's gang base. Additionally, a Kingpin, should they feel the need to, can inflict the '!banned' status upon you, preventing you from enlisting in their gang.",
 	"food":"Food lowers your hunger by a set amount, and can be ordered from various **restaurants** within the city. Generally speaking, the more expensive food is, the more hunger it sates. You can **'!order'** food to place it in your inventory, and **'!use [food name]'** to use it. You can only carry a certain amount of food depending on your level. Regular food items expire after 2 in-game days, or 12 hours in real life, while crops expire after 8 in-game days (48 hours), and food items gained from milling expire after a whole 2 weeks in real life. Three popular restauraunts close by various gang bases include **THE SPEAKEASY** (juveniles), **THE SMOKER'S COUGH** (rowdys), and **RED MOBSTER SEAFOOD** (killers), though there are other places to order food as well, such as the **Food Court**.",
-	"capturing":"Capturing districts is the primary objective of **ENDLESS WAR**. Once you get at least 50,000 slime, you are able to capture districts and generate slime for your team's **Kingpin**. The rate at which you capture a district is determined by various factors. If more **people** are capturing a district, that district will take **less** time to capture. The **property class** (which can range from S at the highest to C at the lowest) of that district will also increase capture time, with S class districts taking more time to capture than C class districts. Districts will take **less** time to capture if they are nearby **friendly** districts, and **more** time to capture if they are nearby **enemy** districts. Districts will have their capture progress **decay** over time, but if a captured district is **fully surrounded** by friendly districts (example: Assault Flats Beach is surrounded by Vagrant's Corner and New New Yonkers), then it will **not** decay. Inversely, districts will decay **faster** if they are next to **enemy** districts. **DECAPTURING** (lowering an enemy's capture progress on districts they control) and **RENEWING** (increasing capture progress on districts your team currently controls) can also be done, but only if that district is **not** fully surrounded. **JUVIE'S ROW**, **ROWDY ROUGHHOUSE**, and **COP KILLTOWN** are gang bases, and thus cannot be captured, nor do they decay. To check the capture progress of a district, use **'!progress'**. To view the status of the map itself and check what property class each district has, use **'!map'**.",
+	"capturing":"Capturing districts is the primary objective of **ENDLESS WAR**. Once you get at least 50,000 slime, you are able to capture districts and generate slime for your team's **Kingpin**. The rate at which you capture a district is determined by various factors. If more **people** are capturing a district, that district will take **less** time to capture. The **property class** (which can range from S at the highest to C at the lowest) of that district will also increase capture time, with S class districts taking more time to capture than C class districts. Districts will take **less** time to capture if they are nearby **friendly** districts, and **more** time to capture if they are nearby **enemy** districts. Districts will have their capture progress **decay** over time, but if a captured district is **fully surrounded** by friendly districts (example: Assault Flats Beach is surrounded by Vagrant's Corner and New New Yonkers), then it will **not** decay. Inversely, districts will decay **faster** if they are next to **enemy** districts. **DECAPTURING** (lowering an enemy's capture progress on districts they control) and **RENEWING** (increasing capture progress on districts your team currently controls) can also be done, but only if that district is **not** fully surrounded. Once a district has been fully captured, it will stay locked at 100% for a duration depending on its property class and the number of people involved in capturing it. **JUVIE'S ROW**, **ROWDY ROUGHHOUSE**, and **COP KILLTOWN** are gang bases, and thus cannot be captured, nor do they decay. To check the capture progress of a district, use **'!progress'**. To view the status of the map itself and check what property class each district has, use **'!map'**.",
 	"transportation":"There are various methods of transportation within the city, the quickest and most efficient of them being **The Subway System**. Trains can be boarded with **'!board'** or **'!embark'**, and to board specific trains, you can add your destination to the command. For example, to board the red line to Cratersville, you would use '!board redtocv'. **'!disembark'** can be used to exit a train. **The Ferry** (which moves between Vagrant's Corner and Wreckington) and **The Blimp** (which moves between Dreadford and Assault Flats Beach) can also be used as methods of transportation, though they take longer to arrive at their destinations than the trains do. Refer to the diagram below (credits to Connor#3355) on understanding which districts have subway stations on them, though take note that the white subway line is currently non-operational.\nhttps://cdn.discordapp.com/attachments/431238867459375145/570392908780404746/t_system_final_stop_telling_me_its_wrong_magicks.png",
 	"death": "Death is an integral mechanic to Endless War. Even the most experienced players will face the sewers every now and again. If you find yourself in such a situation, use **'!revive'** in the sewers channel, and you will return to the land of the living as a juvenile at the base of ENDLESS WAR. Dying will drop some of your unadorned cosmetics and food, and all of your unequiped weapons, but your currently adorned cosmetics and equiped weapon will remain in your inventory (Gangsters will lose half of their food/unadorned cosmetics, while Juveniles lose only a quarter). Try not to die too often however, as using !revive collects a 'death tax', which is 1/10th of your current slimecoin. Alternatively, you can hold off on reviving and remain a **ghost**, which has its own gameplay mechanics associated with it. To learn more, use '!help ghosts' at one of the colleges or with a game guide.",
 	# Introductions, part 2
@@ -13708,7 +13866,7 @@ help_responses = {
 	"scavenging":"Scavenging allows you to collect slime that is **stored** in districts. When someone in a district gets hurt or dies, their slime **splatters** onto the ground, allowing you to use **'!scavenge'** and collect it, similarly to mining. Scavenging, however, raises your hunger by about 1% per use of the '!scavenge' command, so it's often more efficient to do a '!scavenge' command **every 30 seconds** or so, resulting in the highest potential collection of slime at the lowest cost of hunger. You can still spam it, just as you would with '!mine', but you'll gain less and less slime if you don't wait for the 30 second cool-down. To check how much slime you can scavenge, use **'!look'** while in a district channel. You can also scavenge for items by doing '!scavenge [item name]'.",
 	"farming":"**Farming** is an alternative way to gain slime, accessible only by **JUVENILES**. It is done by planting poudrins on a farm with the **'!sow'** command. You can only '!sow' one poudrin per farm. After about 12 in-game hours (3 hours in real life), you can use **'!reap'** to gain 200,000 slime, with a 1/30 chance to gain a poudrin. If you do gain a poudrin, you also have 1/3 chance to gain a second poudrin. If your poudrin plant is left alone for too long (around 2 in-game days, or 12 hours in real life), it will **die out**. In addition to slime, farming also provides you with various **crops** which can be used for **milling**. Crops can be eaten by themselves, but it's much more useful if you use **'!mill'** on them while at a farm, granting you **dyes**, as well as food items and cosmetics associated with that crop, all at the cost of 75,000 slime per '!mill'. Dyes can be used on slimeoids with **'!saturateslimeoid'**. Crops can also be sown themselves with '!sow [crop name]', and upon reaping you be rewarded with a bushel of that crop, as well as 100,000 slime. You can, however, increase the slime gained from sowing crops by using **'!checkfarm'**, and performing **'!irrigate'**, **'!fertilize'**, **'!pesticide'** or **'!weed'** if neccessary. Current farms within the city include **JUVIE'S ROW FARMS** (within Juvie's Row), **OOZE GARDENS FARMS** (close by Rowdy Roughhouse), and **ARSONBROOK FARMS** (close by Cop Killtown).",
 	"fishing": "**Fishing** can be done by performing the **'!cast'** command at one of the six piers, including **Crookline Pier**, **Jaywalker Plain Pier**, **Toxington Pier**, **Assault Flats Beach Pier**, **Slime's End Pier**, **Vagrant's Corner Pier**, as well as **The Ferry**. To reel in a fish, use **'!reel'** when the game tells you that you have a bite. If you don't reel in quick enough, the fish will get away. If you are enlisted and have the **fishing rod** equiped, you will have increased chances of reeling in a fish. For more information about fishing, refer to this helpful guide (credits to Miller#2705).\nhttps://www.youtube.com/watch?v=tHDeSukIqME\nAs an addendum to that video, note that fish can be taken to the labs in Brawlden, where they can be made more valuble in bartering by increasing their size with **'!embiggen [fish]'**.",
-	"hunting": "**Hunting** is another way to gain slime in ENDLESS WAR. To hunt, you can visit **The Outskirts**, which are districts located next to the edge of the map (Wreckington -> Wreckington Outskirts, Toxington -> Toxington Outskirts, etc). In the outskirts, you will find enemies that you can !kill. Rather than doing '!kill @' like with players, with enemies you can either type their display name ('!kill Dinoslime'), their shorthand name ('!kill dino'), or their identifying letter ('!kill A'), which can be accessed with !look. To see how much slime an enemy has, you can do '!data [enemy name]', or just !data with any of the previous types of methods listed. Enemies will drop items and slime upon death, and some enemies are more powerful and threatening than others. In fact, there are enemies powerful enough to hold their own against the gangsters in the city, called **Raid Bosses**, and will enter into the city as a result, rather than just staying in the outskirts like regular enemies. **The Rowdy Roughhouse** and **Cop Killtown** will send out a response that mentions which district a raid boss has entered into. Enemies despawn after **3 hours in real life**.",
+	"hunting": "**Hunting** is another way to gain slime in ENDLESS WAR. To hunt, you can visit **The Outskirts**, which are districts located next to the edge of the map (Wreckington -> Wreckington Outskirts, Toxington -> Toxington Outskirts, etc). In the outskirts, you will find enemies that you can !kill. Rather than doing '!kill @' like with players, with enemies you can either type their display name ('!kill Dinoslime'), their shorthand name ('!kill dino'), or their identifying letter ('!kill A'), which can be accessed with !look (WARNING: Raid bosses moving around the city do not have identifying letters. You must use the other targeting methods to attack them). To see how much slime an enemy has, you can do '!data [enemy name]', or just !data with any of the previous types of methods listed. Enemies will drop items and slime upon death, and some enemies are more powerful and threatening than others. In fact, there are enemies powerful enough to hold their own against the gangsters in the city, called **Raid Bosses**, and will enter into the city as a result, rather than just staying in the outskirts like regular enemies. **The Rowdy Roughhouse** and **Cop Killtown** will send out a response that mentions which district a raid boss has entered into. Enemies despawn after **3 hours in real life**.",
 	# Additional gameplay mechanics, part 1
 	"mutations": "**Mutations** are helpful bonuses you acquire every five levels. When you acquire a mutation, a short text response will indicate what it can do. To reroll your most recent mutation, you can visit the labs and type **'!rerollmutation'**. To get rid of all your current mutations, you can also do **'!sterilizemutations'**.",
 	"mymutations":"You read some research notes about your current mutations...", # will print out a list of mutations with their specific mechanics
@@ -13730,6 +13888,29 @@ help_responses = {
 	# Additional gameplay mechanics, part 4
 	"profile": "This isn't so much a guide on gameplay mechanics as it is just a guide for what to expect from roleplaying in ENDLESS WAR. The general rule of thumb is that your profile picture will act as your 'persona' that gets depicted in fanworks, and it can be said that many of the colorful characters you'll find in NLCakaNM originated in this way.",
 
+	# Combat
+	"combat": "Once you have enlisted in a gang, you can engage in gang violence. To do so you will need a weapon, which you can find at the Dojo and a target. To attack an enemy, you have to **!equip** a weapon and **!kill [player]**. Attacking costs slime and sap. The default cost for attacking is (your slimelevel)^4 / 60 and the default damage it does to your opponent is (your slimelevel)^4 / 6. Every weapon has an attack cost mod and a damage mod that may change these default values. When you reduce a player's slime count below 0 with your attacks, they die. Most weapons will ask you to input a security code with every attack. This security code, also referred to as a captcha, is displayed after a previous !kill or when you !inspect your weapon. Heavy weapons increase crit chance by 5% and decrease miss chance by 10% against you, when you carry them.",
+	"sap": "**Sap** is a resource your body produces to control your slime. It's integral to being able to act in combat. You can have a maximum amount of sap equal to your slime level. When you spend it, it will regenerate at a rate of 1 sap every 5 seconds. You can spend your sap in a variety of ways: **!harden [number]** allows you to dedicate a variable amount of sap to your defense. Hardened sap reduces incoming damage by a factor of 10 / (10 + hardened sap). Your hardened sap counts against your maximum sap pool, so the more you dedicate to defense, the less you will have to attack. You can **!liquefy [number]** hardened sap back into your sap pool. Every attack requires at least 1 sap to complete. Different weapons have different sap costs. Some weapons have the ability to destroy an amount of hardened sap from your target, or ignore a portion of their hardened sap armor. This is referred to as **sap crushing** and **sap piercing** respectively. There are also other actions you can take in combat, that cost sap, such as: **!aim [player]** will slightly increase your hit chance and crit chance against that player for 10 seconds. It costs 2 sap. **!dodge [player]** will decrease that players hit chance against you for 10 seconds. It costs 3 sap. **!taunt [player]** will decrease that player's hit chance against targets other than you for 10 seconds. It costs 5 sap.",
+	weapon_id_revolver: "**The revolver** is a weapon for sale at the Dojo. Attacking with the revolver costs 1 sap. It has a damage mod of 0.8 and an attack cost mod of 1. It has a captcha length of 4, a miss chance of 10% and a 10% chance for a crit, which does 2x damage. The revolver has sap crushing 2. After every 6 shots you will need to **!reload** it.",
+	weapon_id_dualpistols: "**The dual pistols** are a weapon for sale at the Dojo. Attacking with the dual pistols costs 1 sap. They have a damage mod of 1 and an attack cost mod of 1. They have a captcha length of 2, a miss chance of 40% and a 20% chance for a crit, which does 2x damage. The dual pistols have sap crushing 2. After every 12 shots you will need to **!reload** them.",
+	weapon_id_shotgun: "**The shotgun** is a weapon for sale at the Dojo. Attacking with the shotgun costs 5 sap. It has a damage mod of 1.65 and an attack cost mod of 1.5. It has a captcha length of 6, a miss chance of 10% and a 10% chance for a crit, which does 2x damage. The shotgun has sap crushing 5. After every 2 shots you will need to **!reload** it.",
+	weapon_id_rifle: "**The rifle** is a weapon for sale at the Dojo. Attacking with the rifle costs 4 sap. It has a damage mod of 1.25 and an attack cost mod of 1.5. It has a captcha length of 6, and a 20% chance for a crit, which does 2x damage. The rifle never misses. The rifle has sap piercing 10. After every 4 shots you will need to **!reload** it.",
+	weapon_id_smg: "**The SMG** is a weapon for sale at the Dojo. Attacking with the SMG costs 3 sap. It has a damage mod of 0.2 and an attack cost mod of 1. It has a captcha length of 4 and a 10% chance to jam with every attack, in which case you will need to **!unjam** it to continue firing. The SMG only requires a captcha for !unjam, not for every !kill. For every !kill it shoots 6 bullets, each of which has a 25% miss chance, and a 5% chance for a crit, which does 3x damage. Every bullet has sap crushing 1. After every 4 attacks you will need to **!reload** it.",
+	weapon_id_minigun: "**The minigun** is a heavy weapon not for sale at the Dojo. Attacking with the minigun costs 15 sap. It has a damage mod of 0.8 and an attack cost mod of 5. It has a captcha length of 10. For every !kill it shoots 10 bullets, each of which has a 50% miss chance, and a 10% chance for a crit, which does 2x damage. Every bullet has sap crushing 2.",
+	weapon_id_bat: "**The nailbat** is a weapon for sale at the Dojo. Attacking with the bat costs 2 sap. It has a random damage mod between 0.5 and 2.5 and an attack cost mod of 1. It has a captcha length of 2, a miss chance of 1/13, a 1/13 chance for a crit, which increases the damage mod to 4, and a 1/13 chance to backfire and damage the wielder instead. The bat has sap crushing 2. If you takes less than 3 seconds between attacks, your miss chance will increase.",
+	weapon_id_brassknuckles: "**The brass knuckles** are a weapon for sale at the Dojo. Attacking with the brass knuckles costs 1 sap. They have a damage mod of 1 and an attack cost mod of 1. They have a captcha length of 2. For every !kill they throw 2 punches. Every punch has a 20% miss chance. If you land 3 successful attacks (not punches) in succession with perfect timing, the third attack will throw an extra punch, which deals 3x damage and has 5 sap crushing. If you takes less than 2 seconds between attacks, your damage will decrease. For perfect timing you need to take 2 seconds between attacks exactly.",
+	weapon_id_katana: "**The katana** is a weapon for sale at the Dojo. Attacking with the katana costs 12 sap. It has a damage mod of 1.3 and an attack cost mod of 1.3. It has a captcha length of 8. The katana never misses. If the katana is the only weapon in your inventory, it crits for 2x damage on every hit. If you takes less than 5 seconds between attacks, your damage will decrease. If you take exactly 5 seconds between attacks, the katana gains sap piercing 10 (sap piercing 15 on a crit).",
+	weapon_id_broadsword: "**The broadsword** is a heavy weapon for sale at the Dojo. Attacking with the broadsword costs 4 sap. It has a damage mod of 3 and an attack cost mod of 5. It has a captcha length of 4, a miss chance of 10%, a 10% chance for a crit, which does 2x damage, and a 20% chance to backfire and damage the wielder instead. The broadsword has sap crushing 5 and sap piercing 20. After every !kill you will need to **!reload**, to hoist it back over your head. The broadsword's damage mod increases by 1.5 for every kill you get with it in a single life, up to a maximum damage mod of 5.",
+	weapon_id_nunchucks: "**The nunchucks** are a weapon for sale at the Dojo. Attacking with the nunchucks costs 4 sap. They have a damage mod of 0.5 and an attack cost mod of 1. They have a captcha length of 2. For every !kill they throw 4 blows. Every blow has a 25% miss chance and 1 sap crushing. If all 4 blows hit, you deal an additional blow that does 4x damage. If all shots miss, the nunchucks will backfire for 2x damage. If you takes less than 3 seconds between attacks, your miss chance will increase.",
+	weapon_id_scythe: "**The scythe** is a weapon for sale at the Dojo. Attacking with the scythe costs 6 sap. It has a damage mod of 0.5 and an attack cost mod of 3. It has a captcha length of 4, a miss chance of 10% and a 10% chance for a crit, which does 3x damage. The scythe has sap piercing 3 for every kill your opponent got this life, up to sap piercing 30. The scythe's damage mod also increases by 0.5 for every kill your opponent got this life, up to a maximum damage mod of 5. If you take less than 3 seconds between attacks, your damage will decrease.",
+	weapon_id_yoyo: "**The yo-yo** is a weapon for sale at the Dojo. Attacking with the yo-yo costs 1 sap. It has a damage mod of 0.5 and an attack cost mod of 0.75. It has a captcha length of 2, a miss chance of 18.75% and a 10% chance for a crit, which does 2x damage. The yo-yo's damage mod increases by 0.25 for every successful consecutive hit, without getting hit yourself.",
+	weapon_id_bass: "**The bass guitar** is a weapon not for sale at the Dojo. Attacking with the bass costs 2 sap. It has a random damage mod between 0.5 and 2.5 and an attack cost mod of 1. It has a miss chance of 1/13 and a 2/13 chance for a crit, which increases the damage mod to 4. The bass does not require a captcha to use. The bass has sap crushing 1 and sap piercing 5. If you takes less than 3 seconds between attacks, your miss chance will increase.",
+	weapon_id_umbrella: "**The umbrella** is a weapon for sale at the Bazaar. Attacking with the umbrella costs 1 sap. It has a damage mod of 0.5 and an attack cost mod of 1. It has a captcha length of 4, a miss chance of 10%, and a 10% chance for a crit, which does 2x damage. The umbrella has sap crushing 1. The umbrella decreases incoming damage by 75% and reduces sap crushing of incoming attacks by 1.",
+	weapon_id_knives: "**The throwing knives** are a weapon for sale at the Dojo. Attacking with the knives costs 1 sap. They have a damage mod of 0.5 and an attack cost mod of 0.25. They have a captcha length of 4, a miss chance of 10% and a 10% chance for a crit, which does 1.5x damage. When you attack with a throwing knife, it is used up, and you have to buy more.",
+	weapon_id_molotov: "**The molotov bottles** are a weapon for sale at the Dojo. Attacking with the molotovs costs 1 sap. They have a damage mod of 0.75 and an attack cost mod of 2. They have a captcha length of 4, a miss chance of 10%, a 10% chance for a crit, which does 2x damage, and a 20% chance to backfire. They have sap piercing 10. When you attack with a molotov, it is used up, and you have to buy more. Molotovs set every enemy in the district on fire, which deals damage over time.",
+	weapon_id_grenades: "**The grenades** are a weapon for sale at the Dojo. Attacking with the grenades costs 1 sap. They have a damage mod of 0.75 and an attack cost mod of 2. They have a captcha length of 4, a miss chance of 10%, a 10% chance for a crit, which does 4x damage, and a 10% chance to backfire. They have sap crushing 2. When you attack with a grenade, it is used up, and you have to buy more. Grenades damage every enemy in the district.",
+	weapon_id_garrote: "**The garrote wire** is a weapon for sale at the Dojo. Attacking with the garrote costs 5 sap. It has a damage mod of 15 and an attack cost mod of 1. It doesn't require a captcha and it pierces all enemy hardened sap. It has a 0% miss chance and a 1% chance for a crit, which does 10x damage. When you attack with a garrote, the target has 5 seconds to send any message before the damage is done. If they do, the attack fails.",
+	
 }
 
 # Keys are retrieved out of order in older versions of python. This list circumvents the issue.
@@ -13740,12 +13921,16 @@ help_responses_ordered_keys = [
 	"mutations", "mymutations", "smelting", "sparring", "ghosts",
 	"slimeoids", "cosmetics", "realestate", "apartments", "stocks",
 	"trading", "weather", "casino", "bleeding", "offline",
+	"combat", "sap", weapon_id_revolver, weapon_id_dualpistols, weapon_id_shotgun,
+	weapon_id_rifle, weapon_id_smg, weapon_id_bat, weapon_id_brassknuckles, weapon_id_katana,
+	weapon_id_broadsword, weapon_id_nunchucks, weapon_id_scythe, weapon_id_yoyo, weapon_id_umbrella,
+	weapon_id_knives, weapon_id_molotov, weapon_id_grenades, weapon_id_garrote, weapon_id_minigun,
 	"profile",
 ]
 
 mutation_descriptions = {
 	mutation_id_spontaneouscombustion: "Upon dying you do damage proportional to your current slime level, calculated as (level^4)/5, hitting everyone in the district. Example: A level 50 player will do 1,250,000 damage.",
-	mutation_id_thickerthanblood: "On a fatal blow, immediately receive the opponent’s remaining slime, causing none of it to bleed onto the ground or go your kingpin.",
+	mutation_id_thickerthanblood: "On a fatal blow, immediately receive the opponent’s remaining slime, causing none of it to bleed onto the ground or go your kingpin. Its effects are diminished on hunted enemies, however.",
 	mutation_id_fungalfeaster: "On a fatal blow, restore all of your hunger.",
 	mutation_id_sharptoother: "The chance to miss with a weapon is reduced by 50%. Specifically, a normal miss will now have a 50% to either go through as a miss or a hit.",
 	mutation_id_2ndamendment: "One extra equippable gun slot in your inventory.",
@@ -13761,7 +13946,7 @@ mutation_descriptions = {
 	mutation_id_bingeeater: "Upon eating food, the restored hunger is multiplied by the number of dishes you’ve consumed in the past 5 seconds.",
 	mutation_id_lonewolf: "Double capture rate and 50% more damage when in a district without any friendly gangsters. Stacks with the Patriot mutation.",
 	mutation_id_quantumlegs: "You can now use the !tp command, allowing you to teleport to a district up to two locations away from you instantly, with a cooldown of 3 hours.",
-	mutation_id_chameleonskin: "While offline, you can move to and scout other districts. You can still be scouted by players with the Keen Smell mutation.",
+	mutation_id_chameleonskin: "While offline, you can move to and scout other districts and cannot be scouted.",
 	mutation_id_patriot: "Double capture rate. Stacks with the Lone Wolf mutation.",
 	mutation_id_socialanimal: "Your damage increases by 10% for every ally in your district.",
 	mutation_id_threesashroud: "Cannot be scouted if there are more than 3 allies in your district. Cannot be scouted by players with the Keen Smell mutation.",
@@ -13823,6 +14008,10 @@ enemy_attacktype_molotovbreath = 'molotov breath'
 enemy_attacktype_armcannon = 'arm cannon'
 enemy_attacktype_axe = 'axe'
 enemy_attacktype_hooves = 'hooves'
+
+# Enemy weather types. In the future enemies will make use of this in tandem with the current weather, but for now they can just resist the rain.
+enemy_weathertype_normal = 'normal'
+enemy_weathertype_rainresist = 'rainresist'
 
 # Enemy types
 # Common enemies
@@ -13886,14 +14075,14 @@ enemy_drop_tables = {
 	enemy_type_sandbag: [{"poudrin": [100, 1, 1]}],
 	enemy_type_juvie: [{"poudrin": [50, 1, 2]}, {"pleb": [10, 1, 1]}, {"crop": [30, 1, 1]}, {"card": [20, 1, 1]}],
 	enemy_type_dinoslime: [{"poudrin": [100, 2, 4]}, {"pleb": [40, 1, 2]},  {"meat": [33, 1, 2]}],
-    enemy_type_slimeadactyl: [{"poudrin": [100, 3, 5]}, {"pleb": [40, 1, 2]}],
-    enemy_type_microslime: [{"patrician": [100, 1, 1]}],
-    enemy_type_slimeofgreed: [{"poudrin": [100, 2, 2]}],
-    enemy_type_desertraider: [{"poudrin": [100, 1, 2]}, {"pleb": [100, 1, 1]},  {"crop": [50, 3, 6]}],
+	enemy_type_slimeadactyl: [{"poudrin": [100, 3, 5]}, {"pleb": [40, 1, 2]}],
+	enemy_type_microslime: [{"patrician": [100, 1, 1]}],
+	enemy_type_slimeofgreed: [{"poudrin": [100, 2, 2]}],
+	enemy_type_desertraider: [{"poudrin": [100, 1, 2]}, {"pleb": [100, 1, 1]},  {"crop": [50, 3, 6]}],
 	enemy_type_mammoslime: [{"poudrin": [75, 5, 6]},  {"patrician": [60, 1, 2]}],
 	enemy_type_doubleheadlessdoublehorseman: [{"poudrin": [100, 22, 22]}, {"pleb": [100, 22, 22]}, {"patrician": [100, 22, 22]}, {"crop": [100, 22, 22]}, {"meat": [100, 22, 22]}, {"card": [100, 22, 22]}],
 	enemy_type_doublehorse: [{"poudrin": [100, 22, 22]}],
-    enemy_type_megaslime: [{"poudrin": [100, 4, 8]}, {"pleb": [100, 1, 3]}, {"patrician": [33, 1, 1]}],
+	enemy_type_megaslime: [{"poudrin": [100, 4, 8]}, {"pleb": [100, 1, 3]}, {"patrician": [33, 1, 1]}],
 	enemy_type_slimeasaurusrex: [{"poudrin": [100, 8, 15]}, {"pleb": [75, 3, 3]}, {"patrician": [50, 1, 2]},  {"meat": [100, 3, 4]}],
 	enemy_type_greeneyesslimedragon: [{"poudrin": [100, 15, 20]}, {"patrician": [100, 2, 4]}],
 	enemy_type_unnervingfightingoperator: [{"poudrin": [100, 1, 1]}, {"crop": [100, 1, 1]}, {"meat": [100, 1, 1]}, {"card": [100, 1, 1]}]
@@ -13950,31 +14139,31 @@ coward_responses_hurt = [
 
 # List of outskirt districts for spawning purposes
 outskirts_districts = [
-    poi_id_wreckington_outskirts,
-    poi_id_cratersville_outskirts,
-    poi_id_oozegardens_outskirts,
-    poi_id_southsleezeborough_outskirts,
-    poi_id_crookline_outskirts,
-    poi_id_dreadford_outskirts,
-    poi_id_jaywalkerplain_outskirts,
-    poi_id_westglocksbury_outskirts,
-    poi_id_poloniumhill_outskirts,
-    poi_id_charcoalpark_outskirts,
-    poi_id_toxington_outskirts,
-    poi_id_astatineheights_outskirts,
-    poi_id_arsonbrook_outskirts,
-    poi_id_brawlden_outskirts,
-    poi_id_newnewyonkers_outskirts,
-    poi_id_assaultflatsbeach_outskirts
+	poi_id_wreckington_outskirts,
+	poi_id_cratersville_outskirts,
+	poi_id_oozegardens_outskirts,
+	poi_id_southsleezeborough_outskirts,
+	poi_id_crookline_outskirts,
+	poi_id_dreadford_outskirts,
+	poi_id_jaywalkerplain_outskirts,
+	poi_id_westglocksbury_outskirts,
+	poi_id_poloniumhill_outskirts,
+	poi_id_charcoalpark_outskirts,
+	poi_id_toxington_outskirts,
+	poi_id_astatineheights_outskirts,
+	poi_id_arsonbrook_outskirts,
+	poi_id_brawlden_outskirts,
+	poi_id_newnewyonkers_outskirts,
+	poi_id_assaultflatsbeach_outskirts
 ]
 
 # Letters that an enemy can identify themselves with
 identifier_letters = [
-    'A', 'B', 'C', 'D', 'E',
-    'F', 'G', 'H', 'I', 'J',
-    'K', 'L', 'M', 'N', 'O',
-    'P', 'Q', 'R', 'S', 'T',
-    'U', 'V', 'W', 'X', 'Y', 'Z'
+	'A', 'B', 'C', 'D', 'E',
+	'F', 'G', 'H', 'I', 'J',
+	'K', 'L', 'M', 'N', 'O',
+	'P', 'Q', 'R', 'S', 'T',
+	'U', 'V', 'W', 'X', 'Y', 'Z'
 ]
 
 rain_protection = [
@@ -14038,22 +14227,18 @@ grid_type_by_mining_event = {
 	event_type_bubblebreaker: mine_grid_type_bubblebreaker,
 }
 
-# A list of tricks for Double Halloween
-trick_amounts = [10, 100, 1000, 10000]
-
-halloween_tricks_tricker = {
-	10:"You open the door and give {} a hearty '!SPOOK'. They lose 10 slime!",
-	100:"You slam open the door and give {} a knuckle sandwich. They lose 100 slime!",
-	1000:"You hastily unlock the door and throw a bicarbonate-soda-flavored pie in {}'s face. They lose 1000 slime!",
-	10000:"You just break down the door and start stomping on {}'s fucking groin. The extreme pain makes them lose 10000 slime!",
-}
-
-halloween_tricks_trickee = {
-	10:"{} opens the door and gives you a hearty '!SPOOK'. You lose 10 slime!",
-	100:"{} slams open the door and gives you a knuckle sandwich. You lose 100 slime!",
-	1000:"{} hastily unlocks the door and throws a bicarbonate-soda-flavored pie in your face. You lose 1000 slime!",
-	10000:"{} just breaks down the door and starts stomping on your fucking groin. The extreme pain makes you lose 10000 slime!",
-}
+halloween_tricks_tricker = [
+	"You open the door and give {} a hearty '!SPOOK'. They lose {} slime!",
+	"You slam open the door and give {} a knuckle sandwich. They lose {} slime!",
+	"You hastily unlock the door and throw a bicarbonate-soda-flavored pie in {}'s face. They lose {} slime!",
+	"You just break down the door and start stomping on {}'s fucking groin. The extreme pain makes them lose {} slime!",
+]
+halloween_tricks_trickee = [
+	"{} opens the door and gives you a hearty '!SPOOK'. You lose {} slime!",
+	"{} slams open the door and gives you a knuckle sandwich. You lose {} slime!",
+	"{} hastily unlocks the door and throws a bicarbonate-soda-flavored pie in your face. You lose {} slime!",
+	"{} just breaks down the door and starts stomping on your fucking groin. The extreme pain makes you lose {} slime!",
+]
 
 dungeon_tutorial = [
 	#00

@@ -983,7 +983,6 @@ async def knock(cmd = None):
 		response = "One door at a time, please."
 		return await ewutils.send_message(cmd.client, cmd.message.author, ewutils.formatMessage(cmd.message.author, response))
 
-# TODO: Remove after Double Halloween
 async def trickortreat(cmd = None):
 	user_data = EwUser(member=cmd.message.author)
 
@@ -1099,7 +1098,17 @@ async def trickortreat(cmd = None):
 				response = "You give {} a {}. Happy Double Halloween, you knucklehead!".format(cmd.message.author.display_name, item_name)
 				return await ewutils.send_message(cmd.client, target, ewutils.formatMessage(target, response))
 			else:
-				slime_loss = random.choice(ewcfg.trick_amounts)
+				slime_loss = random.randrange(10000) + 1
+				
+				if slime_loss <= 10:
+					trick_index = 0
+				elif slime_loss <= 100:
+					trick_index = 1
+				elif slime_loss <= 1000:
+					trick_index = 2
+				else:
+					trick_index = 3
+					
 				if user_data.rr_challenger != "":
 					user_data.rr_challenger = ""
 				user_data.change_slimes(n = -slime_loss, source=ewcfg.source_damage)
@@ -1121,9 +1130,9 @@ async def trickortreat(cmd = None):
 					await ewrolemgr.updateRoles(client=client, member=server.get_member(user_data.id_user))
 					
 				user_data.persist()
-				response = ewcfg.halloween_tricks_trickee[slime_loss].format(target.display_name)
+				response = ewcfg.halloween_tricks_trickee[trick_index].format(target.display_name, slime_loss)
 				await ewutils.send_message(cmd.client, cmd.message.author, ewutils.formatMessage(cmd.message.author, response))
-				response = ewcfg.halloween_tricks_tricker[slime_loss].format(cmd.message.author.display_name)
+				response = ewcfg.halloween_tricks_tricker[trick_index].format(cmd.message.author.display_name, slime_loss)
 				return await ewutils.send_message(cmd.client, target, ewutils.formatMessage(target, response))
 			
 				
@@ -1186,7 +1195,17 @@ async def trickortreat(cmd = None):
 
 				response += "A kind resident gives you a {}. You thank them, and go about your business.".format(item_name)
 			else:
-				slime_loss = random.choice(ewcfg.trick_amounts)
+				slime_loss = random.randrange(10000) + 1
+				
+				if slime_loss <= 10:
+					trick_index = 0
+				elif slime_loss <= 100:
+					trick_index = 1
+				elif slime_loss <= 1000:
+					trick_index = 2
+				else:
+					trick_index = 3
+				
 				user_data.change_slimes(n=-slime_loss, source=ewcfg.source_damage)
 				if user_data.slimes <= 0:
 					client = ewutils.get_client()
@@ -1205,7 +1224,7 @@ async def trickortreat(cmd = None):
 					await resp_cont.post()
 					await ewrolemgr.updateRoles(client=client, member=server.get_member(user_data.id_user))
 				user_data.persist()
-				response += ewcfg.halloween_tricks_trickee[slime_loss].format("A pranksterous resident")
+				response += ewcfg.halloween_tricks_trickee[trick_index].format("A pranksterous resident", slime_loss)
 				
 			
 			return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
@@ -1594,8 +1613,8 @@ async def aptCommands(cmd):
 		return await ewmap.move(cmd=cmd, isApt = True)
 	elif cmd_text == ewcfg.cmd_knock:
 		return await knock(cmd=cmd)
-	elif cmd_text == ewcfg.cmd_trickortreat:
-		return await trickortreat(cmd=cmd)
+	#elif cmd_text == ewcfg.cmd_trickortreat:
+	#	return await trickortreat(cmd=cmd)
 	elif cmd_text == ewcfg.cmd_wash:
 		return await wash(cmd=cmd)
 	elif cmd_text == ewcfg.cmd_browse:
@@ -1709,9 +1728,8 @@ async def aptCommands(cmd):
 		return await apt_help(cmd)
 	elif cmd_text == ewcfg.cmd_accept or cmd_text == ewcfg.cmd_refuse:
 		pass
-	# TODO: Remove after Double Halloween
-	elif cmd_text == ewcfg.cmd_trick or cmd_text == ewcfg.cmd_treat:
-		pass
+	#elif cmd_text == ewcfg.cmd_trick or cmd_text == ewcfg.cmd_treat:
+	#	pass
 	elif cmd_text[0]==ewcfg.cmd_prefix: #faliure text
 		randint = random.randint(1, 3)
 		msg_mistake = "ENDLESS WAR is growing frustrated."

@@ -11,6 +11,7 @@ import ewstatuseffects
 from ew import EwUser
 from ewmarket import EwMarket, EwCompany, EwStock
 from ewitem import EwItem
+from ewdistrict import EwDistrict
 
 """ Food model object """
 class EwFood:
@@ -99,6 +100,11 @@ async def menu(cmd):
 		# Only allowed in the food court.
 		response = "There’s nothing to buy here. If you want to purchase some items, go to a sub-zone with a vendor in it, like the food court, the speakeasy, or the bazaar."
 	else:
+		if poi.is_subzone:
+			district_data = EwDistrict(district = poi.mother_district, id_server = cmd.message.server.id)
+		else:
+			district_data = EwDistrict(district = poi.id_poi, id_server = cmd.message.server.id)
+
 		response = "{} Menu:\n\n".format(poi.str_name)
 
 		for vendor in poi.vendors:
@@ -138,6 +144,16 @@ async def menu(cmd):
 
 				if stock_data != None:
 					value *= (stock_data.exchange_rate / ewcfg.default_stock_exchange_rate) ** 0.2
+
+
+				if district_data.controlling_faction != "":
+					# prices are halved for the controlling gang
+					if district_data.controlling_faction == user_data.faction:
+						value /= 2
+
+					# and 4 times as much for enemy gangsters
+					elif user_data.faction != "":
+						value *= 4
 
 				value = int(value)
 
@@ -251,6 +267,21 @@ async def order(cmd):
 
 				if stock_data is not None:
 					value *= (stock_data.exchange_rate / ewcfg.default_stock_exchange_rate) ** 0.2
+
+				if poi.is_subzone:
+					district_data = EwDistrict(district = poi.mother_district, id_server = cmd.message.server.id)
+				else:
+					district_data = EwDistrict(district = poi.id_poi, id_server = cmd.message.server.id)
+
+
+				if district_data.controlling_faction != "":
+					# prices are halved for the controlling gang
+					if district_data.controlling_faction == user_data.faction:
+						value /= 2
+
+					# and 4 times as much for enemy gangsters
+					elif user_data.faction != "":
+						value *= 4
 
 				value = int(value)
 

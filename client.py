@@ -136,6 +136,20 @@ cmd_map = {
 	# Show a player's combat data.
 	ewcfg.cmd_data: ewcmd.data,
 
+	# sap system
+	ewcfg.cmd_view_sap: ewcmd.view_sap,
+	ewcfg.cmd_harden_sap: ewwep.harden_sap,
+	ewcfg.cmd_harden_sap_alt1: ewwep.harden_sap,
+	ewcfg.cmd_liquefy_sap: ewwep.liquefy_sap,
+
+	
+	# combat sap commands
+	ewcfg.cmd_taunt: ewwep.taunt,
+	ewcfg.cmd_aim: ewwep.aim,
+	ewcfg.cmd_dodge: ewwep.dodge,
+	ewcfg.cmd_dodge_alt1: ewwep.dodge,
+	ewcfg.cmd_dodge_alt2: ewwep.dodge,
+
 	# Check how hungry you are.
 	ewcfg.cmd_hunger: ewcmd.hunger,
 
@@ -148,12 +162,12 @@ cmd_map = {
 	ewcfg.cmd_thrash: ewcmd.thrash,
 	ewcfg.cmd_dab: ewcmd.dab,
 	
-	# Ghosts can BOO (and during Double Halloween, SPOOK)
+	# Ghosts can BOO 
 	ewcfg.cmd_boo: ewcmd.boo,
-	ewcfg.cmd_spook: ewcmd.spook,
+	#ewcfg.cmd_spook: ewcmd.spook,
     
-    # Make a costume for Double Halloween
-    ewcfg.cmd_makecostume: ewitem.makecostume,
+	# Make a costume for Double Halloween
+	#ewcfg.cmd_makecostume: ewitem.makecostume,
 
 	# Show the total of negative slime in the world.
 	ewcfg.cmd_negaslime: ewspooky.negaslime,
@@ -175,7 +189,7 @@ cmd_map = {
 	ewcfg.cmd_sign: ewapt.nothing,
 	ewcfg.cmd_upgrade: ewapt.upgrade,
 	ewcfg.cmd_knock: ewapt.knock,
-	ewcfg.cmd_trickortreat: ewapt.trickortreat,
+	#ewcfg.cmd_trickortreat: ewapt.trickortreat,
 	ewcfg.cmd_breaklease: ewapt.cancel,
 	ewcfg.cmd_aquarium: ewapt.aquarium,
 	ewcfg.cmd_propstand: ewapt.propstand,
@@ -365,6 +379,9 @@ cmd_map = {
 	# Check your current POI capture progress
 	ewcfg.cmd_capture_progress: ewdistrict.capture_progress,
 
+	# Change your current POI capture progress
+	ewcfg.cmd_annex: ewdistrict.annex,
+
 	# link to the world map
 	ewcfg.cmd_map: ewcmd.map,
 	ewcfg.cmd_transportmap: ewcmd.transportmap,
@@ -393,7 +410,7 @@ cmd_map = {
 	ewcfg.cmd_adorn: ewcosmeticitem.adorn,
 	ewcfg.cmd_dedorn: ewcosmeticitem.dedorn,
 	ewcfg.cmd_create: ewkingpin.create,
-	ewcfg.cmd_exalt: ewkingpin.exalt,
+	#ewcfg.cmd_exalt: ewkingpin.exalt,
 	ewcfg.cmd_dyecosmetic: ewcosmeticitem.dye,
 	ewcfg.cmd_dyecosmetic_alt1: ewcosmeticitem.dye,
 	ewcfg.cmd_dyecosmetic_alt2: ewcosmeticitem.dye,
@@ -464,10 +481,10 @@ cmd_map = {
 	ewcfg.cmd_observeslimeoid: ewslimeoid.observeslimeoid,
 	ewcfg.cmd_slimeoidbattle: ewslimeoid.slimeoidbattle,
 	ewcfg.cmd_saturateslimeoid: ewslimeoid.saturateslimeoid,
-        ewcfg.cmd_restoreslimeoid: ewslimeoid.restoreslimeoid,
-        ewcfg.cmd_bottleslimeoid: ewslimeoid.bottleslimeoid,
-        ewcfg.cmd_unbottleslimeoid: ewslimeoid.unbottleslimeoid,
-        #ewcfg.cmd_feedslimeoid: ewslimeoid.feedslimeoid, #TODO
+	ewcfg.cmd_restoreslimeoid: ewslimeoid.restoreslimeoid,
+	ewcfg.cmd_bottleslimeoid: ewslimeoid.bottleslimeoid,
+	ewcfg.cmd_unbottleslimeoid: ewslimeoid.unbottleslimeoid,
+	#ewcfg.cmd_feedslimeoid: ewslimeoid.feedslimeoid, #TODO
 	ewcfg.cmd_dress_slimeoid: ewslimeoid.dress_slimeoid,
 	ewcfg.cmd_dress_slimeoid_alt1: ewslimeoid.dress_slimeoid,
 	ewcfg.cmd_undress_slimeoid: ewslimeoid.undress_slimeoid,
@@ -504,6 +521,7 @@ cmd_map = {
 	ewcfg.cmd_teleport: ewmap.teleport,
 	ewcfg.cmd_teleport_alt1: ewmap.teleport,
 	ewcfg.cmd_teleport_player: ewmap.teleport_player,
+	ewcfg.cmd_boot: ewmap.boot,
 
 	ewcfg.cmd_piss: ewcmd.piss,
 	ewcfg.cmd_fursuit: ewcmd.fursuit,
@@ -546,6 +564,7 @@ while sys.argv:
 
 # When debug is enabled, additional commands are turned on.
 if debug == True:
+	ewutils.DEBUG = True
 	ewutils.logMsg('Debug mode enabled.')
 
 @client.event
@@ -616,7 +635,8 @@ async def on_ready():
 		poi = ewcfg.id_to_poi.get(id_poi)
 		ewmap.landmarks[id_poi] = ewmap.score_map_from(
 			coord_start = poi.coord,
-			user_data = fake_observer
+			user_data = fake_observer,
+			landmark_mode = True
 		)
 
 	ewutils.logMsg("finished landmark precomputation")
@@ -698,11 +718,12 @@ async def on_ready():
 		asyncio.ensure_future(ewutils.spawn_enemies_tick_loop(id_server = server.id))
 		asyncio.ensure_future(ewutils.burn_tick_loop(id_server = server.id))
 		asyncio.ensure_future(ewutils.remove_status_loop(id_server = server.id))
-		asyncio.ensure_future(ewweather.weather_tick_loop(id_server = server.id))
 		asyncio.ensure_future(ewworldevent.event_tick_loop(id_server = server.id))
+		asyncio.ensure_future(ewutils.sap_tick_loop(id_server = server.id))
 		
 		if not debug:
 			await ewtransport.init_transports(id_server = server.id)
+			asyncio.ensure_future(ewweather.weather_tick_loop(id_server = server.id))
 		asyncio.ensure_future(ewslimeoid.slimeoid_tick_loop(id_server = server.id))
 		asyncio.ensure_future(ewfarm.farm_tick_loop(id_server = server.id))
 
@@ -902,6 +923,9 @@ async def on_ready():
 
 
 					market_data.persist()
+
+					if not ewutils.check_fursuit_active(market_data.id_server):
+						ewcosmeticitem.dedorn_all_costumes()
 
 					if market_data.clock == 6 and market_data.day % 8 == 0:
 						await ewapt.rent_time(id_server=server.id)
@@ -1403,6 +1427,53 @@ async def on_message(message):
 			user_data.time_lastenlist = time_now + ewcfg.cd_enlist
 			user_data.persist()
 			await ewutils.send_message(client, message.channel, ewutils.formatMessage(message.author, response))
+			
+		# Toggles rain on and off
+		elif debug == True and cmd == (ewcfg.cmd_prefix + 'toggledownfall'):
+			market_data = EwMarket(id_server=message.server.id)
+			
+			if market_data.weather == ewcfg.weather_bicarbonaterain:
+				newweather = ewcfg.weather_sunny
+				
+				market_data.weather = newweather
+				response = "Bicarbonate rain turned OFF. Weather was set to {}.".format(newweather)
+			else:
+				market_data.weather = ewcfg.weather_bicarbonaterain
+				response = "Bicarbonate rain turned ON."
+				
+			market_data.persist()
+			await ewutils.send_message(client, message.channel, ewutils.formatMessage(message.author, response))
+
+		elif debug == True and cmd == (ewcfg.cmd_prefix + 'dayforward'):
+			market_data = EwMarket(id_server=message.server.id)
+
+			market_data.day += 1
+			market_data.persist()
+
+			response = "Time has progressed 1 day forward manually."
+			
+			if ewutils.check_fursuit_active(market_data.id_server):
+				response += "\nIt's a full moon!"
+				
+			await ewutils.send_message(client, message.channel, ewutils.formatMessage(message.author, response))
+			
+		elif debug == True and cmd == (ewcfg.cmd_prefix + 'hourforward'):
+			market_data = EwMarket(id_server=message.server.id)
+			
+			market_data.clock += 1
+			response = "Time has progressed 1 hour forward manually."
+
+			if market_data.clock >= 24 or market_data.clock < 0:
+				market_data.clock = 0
+				market_data.day += 1
+				response += "\nMidnight has come. 1 day progressed forward."
+				
+			if ewutils.check_fursuit_active(market_data.id_server):
+				response += "\nIt's a full moon!"
+				
+			market_data.persist()
+			await ewutils.send_message(client, message.channel, ewutils.formatMessage(message.author, response))
+			
 			
 		# didn't match any of the command words.
 		else:

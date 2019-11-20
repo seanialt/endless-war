@@ -12,6 +12,7 @@ import ewitem
 from ewmarket import EwMarket
 
 from ew import EwUser
+from ewstatuseffects import EwStatusEffect
 
 class EwMutationFlavor:
 
@@ -160,19 +161,27 @@ async def reroll_last_mutation(cmd):
 			last_mutation_counter = mutation_data.mutation_counter
 			last_mutation = id_mutation
 
+	reroll_fatigue = EwStatusEffect(id_status = ewcfg.status_rerollfatigue_id, user_data = user_data)
 
-	poudrin = ewitem.find_item(item_search = "slimepoudrin", id_user = cmd.message.author.id, id_server = cmd.message.server.id if cmd.message.server is not None else None)
+	poudrins_needed = 2 ** int(reroll_fatigue.value)
 
-	if poudrin == None:
-		response = "You need a slime poudrin to replace a mutation."
+	poudrins = ewitem.find_item_all(item_search = ewcfg.item_id_slimepoudrin, id_user = cmd.message.author.id, id_server = cmd.message.server.id if cmd.message.server is not None else None, item_type_filter = ewcfg.it_item)
+
+	poudrins_have = len(poudrins)
+
+	if poudrins_have < poudrins_needed:
+		response = "You need {} slime poudrin{} to replace a mutation, but you only have {}.".format(poudrins_needed, "" if poudrins_needed == 1 else "s", poudrins_have)
 
 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 	else:
-		ewitem.item_delete(id_item = poudrin.get('id_item'))  # Remove Poudrins
-		market_data.donated_poudrins += 1
+		for delete in range(poudrins_needed):
+			ewitem.item_delete(id_item = poudrins.pop(0).get('id_item'))  # Remove Poudrins
+		market_data.donated_poudrins += poudrins_needed
 		market_data.persist()
-		user_data.poudrin_donations += 1
+		user_data.poudrin_donations += poudrins_needed
 		user_data.persist()
+		reroll_fatigue.value = int(reroll_fatigue.value) + 1
+		reroll_fatigue.persist()
 
 	mutation_data = EwMutation(id_server = user_data.id_server, id_user = user_data.id_user, id_mutation = last_mutation)
 	new_mutation = random.choice(list(ewcfg.mutation_ids))
@@ -183,7 +192,7 @@ async def reroll_last_mutation(cmd):
 	mutation_data.time_lastuse = int(time.time())
 	mutation_data.persist()
 
-	response = "After several minutes long elevator descents, in the depths of some basement level far below the laboratory's lobby, you lay down on a reclined medical chair. A SlimeCorp employee finishes the novel length terms of service they were reciting and asks you if you have any questions. You weren’t listening so you just tell them to get on with it so you can go back to getting slime. They oblige.\nThey grab a butterfly needle and carefully stab you with it, draining some strangely colored slime from your bloodstream. Almost immediately, the effects of your last mutation fade away… but, this feeling of respite is fleeting. The SlimeCorp employee writes down a few notes, files away the freshly drawn sample, and soon enough you are stabbed with syringes. This time, it’s already filled with some bizarre, multi-colored serum you’ve never seen before. The effects are instantaneous. {}\nYou hand off one of your hard-earned poudrins to the SlimeCorp employee for their troubles.".format(ewcfg.mutations_map[new_mutation].str_acquire)
+	response = "After several minutes long elevator descents, in the depths of some basement level far below the laboratory's lobby, you lay down on a reclined medical chair. A SlimeCorp employee finishes the novel length terms of service they were reciting and asks you if you have any questions. You weren’t listening so you just tell them to get on with it so you can go back to getting slime. They oblige.\nThey grab a butterfly needle and carefully stab you with it, draining some strangely colored slime from your bloodstream. Almost immediately, the effects of your last mutation fade away… but, this feeling of respite is fleeting. The SlimeCorp employee writes down a few notes, files away the freshly drawn sample, and soon enough you are stabbed with syringes. This time, it’s already filled with some bizarre, multi-colored serum you’ve never seen before. The effects are instantaneous. {}\nYou hand off {} of your hard-earned poudrins to the SlimeCorp employee for their troubles.".format(ewcfg.mutations_map[new_mutation].str_acquire, poudrins_needed)
 	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 
 

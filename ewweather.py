@@ -174,14 +174,15 @@ async def weather_tick(id_server = None):
 				district_data.change_slimes(n = - slimes_to_erase, source = ewcfg.source_weather)
 				district_data.persist()
 			
-			enemies = ewutils.execute_sql_query("SELECT id_enemy FROM enemies WHERE id_server = %s AND {poi} IN %s AND {life_state} = %s".format(
+			enemies = ewutils.execute_sql_query("SELECT id_enemy FROM enemies WHERE id_server = %s AND {poi} IN %s AND {life_state} = %s AND {weathertype} != %s".format(
 				poi = ewcfg.col_enemy_poi,
-				life_state = ewcfg.col_enemy_life_state
+				life_state = ewcfg.col_enemy_life_state,
+				weathertype = ewcfg.col_enemy_weathertype
 			), (
 				id_server,
 				exposed_pois,
-				ewcfg.enemy_lifestate_alive
-				
+				ewcfg.enemy_lifestate_alive,
+				ewcfg.enemy_weathertype_rainresist
 			))
 
 			for enemy in enemies:

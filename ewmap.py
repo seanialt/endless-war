@@ -3,6 +3,7 @@ import time
 import math
 import heapq
 import random
+import discord
 
 from copy import deepcopy
 
@@ -241,15 +242,15 @@ map_world = [
 	[ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 1
 	[ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 2
 	[ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 3
-	[ -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 4
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 5
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -2, 10, -2, 20, -2, 20,  0, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0, -1, -1, -1,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 6
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 7
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1,  0,  0, 30, -2, -1, -1, -1, -1, -1, -1], # 8
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, 20, -1, 20, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, 10, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1], # 9
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -2, -1, -2, -1, -2, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0, -1, -1, -1, -3, -3, -2, -3, -3, -1, -1, -1, -2, -1,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1], # 10
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1], # 11
-	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, 20, -2, -1, -3, -1, -1, -1, -1,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1], # 12
+	[ -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 4
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 5
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0, -1, -1, -1,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 6
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 7
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1,  0,  0, 30, -2, -1, -1, -1, -1, -1, -1], # 8
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, 20, -1, 20, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1], # 9
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -2, -1, -2, -1, -2, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -2, 30,  0,  0,  0, -1, -1, -1, -3, -3, -2, -3, -3, -1, -1, -1, -1, -1,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1], # 10
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1], # 11
+	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -3, 20, -2, -1, -3, -1, -1, -1, -1,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -2, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1], # 12
 	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1], # 13
 	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0, 30, -3, 20, -2, -1, -3, 30,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -3, 20, -2, -1, -3, -1, -1, -1, -1, -1, -1], # 14
 	[ -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, 20, -1, 20, -1, -3, -1, 20, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, 30, -1, -3, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1], # 15
@@ -281,9 +282,9 @@ map_world = [
 	[ -1, -1, -1, -1, -1,  0,  0, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, -1, -1, 20, -1, -1, -1], # 41
 	[ -1, -1, -1, -1, -1,  0, -1, -1, -1, -2, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -1, -1, -2, -1, -1, -1], # 42
 	[ -1, -1, -1, -1, -1, 30, -1, -1, -1, 20, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, 20, -1, 20, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 43
-	[ -1, -1, -1, -1, -1, -2, 30,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0, -1, -2, -1, -2, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 44
-	[ -1, -1, -1, -1, -1, 30, -1, -1, -1, 20, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, 20, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, 20, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 45
-	[ -1, -1, -1, -1, -1,  0, -1, -1, -1, -2, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -2, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 46
+	[ -1, -1, -1, -1, -1, -2, 30,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0, -1, -2, -1, -2, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 44
+	[ -1, -1, -1, -1, -1, 30, -1, -1, -1, 20, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 20, -1, 20, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 45
+	[ -1, -1, -1, -1, -1,  0, -1, -1, -1, -2, -1, -1, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -2, -1, -2, -1, -2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30, -1, -1, -1, -1, -1, -1, -1,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 46
 	[ -1, -1,  0,  0,  0,  0, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, 30, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 47
 	[ -1, -1,  0, -1, -1, -1, -1, -1, -1, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, 30,  0,  0,  0,  0,  0, -1, -1, -1,  0, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 48
 	[ -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 30, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, -1, -1, -1,  0, -1, -1, -1, -1, 30, -1, -1, -1, 30,  0,  0,  0,  0, 30, -3, -3, -3, -3, -3, -3, -3, -3, -3, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1], # 49
@@ -357,7 +358,7 @@ class EwPath:
 		steps = [],
 		cost = 0,
 		visited = {},
-		pois_visited = set()
+		pois_visited = None
 	):
 		if path_from != None:
 			self.steps = deepcopy(path_from.steps)
@@ -368,13 +369,16 @@ class EwPath:
 			self.steps = steps
 			self.cost = cost
 			self.visited = visited
-			self.pois_visited = pois_visited
+			if pois_visited == None:
+				self.pois_visited = set()
+			else:
+				self.pois_visited = pois_visited
 			
 
 """
 	Add coord_next to the path.
 """
-def path_step(path, coord_next, user_data, coord_end):
+def path_step(path, coord_next, user_data, coord_end, landmark_mode = False):
 	visited_set_y = path.visited.get(coord_next[0])
 	if visited_set_y == None:
 		path.visited[coord_next[0]] = { coord_next[1]: True }
@@ -417,6 +421,9 @@ def path_step(path, coord_next, user_data, coord_end):
 
 	cost_next = int(cost_next / user_data.move_speed)
 
+	if landmark_mode and cost_next > ewcfg.territory_time_gain:
+		cost_next -= ewcfg.territory_time_gain
+
 	path.cost += cost_next
 
 	return True
@@ -424,10 +431,10 @@ def path_step(path, coord_next, user_data, coord_end):
 """
 	Returns a new path including all of path_base, with the next step coord_next.
 """
-def path_branch(path_base, coord_next, user_data, coord_end):
+def path_branch(path_base, coord_next, user_data, coord_end, landmark_mode = False):
 	path_next = EwPath(path_from = path_base)
 
-	if path_step(path_next, coord_next, user_data, coord_end) == False:
+	if path_step(path_next, coord_next, user_data, coord_end, landmark_mode) == False:
 		return None
 	
 	return path_next
@@ -437,6 +444,7 @@ def score_map_from(
 	coord_end = None,
 	poi_start = None,
 	user_data = None,
+	landmark_mode = False
 ):
 	score_map = []
 	for row in map_world:
@@ -489,12 +497,12 @@ def score_map_from(
 
 				neigh = neighs[i]
 				if i < num_neighbors - 1:
-					branch = path_branch(path_base, neigh, user_data, coord_end)
+					branch = path_branch(path_base, neigh, user_data, coord_end, landmark_mode)
 					if branch != None:
 						paths_walking_new.append(branch)
 
 				else:
-					if path_step(path_base, neigh, user_data, coord_end):
+					if path_step(path_base, neigh, user_data, coord_end, landmark_mode):
 						paths_walking_new.append(path_base)
 
 
@@ -735,78 +743,7 @@ def retrieve_locked_districts(id_server):
 	Go down the rabbit hole
 """
 async def descend(cmd):
-	can_message_user = True
-	user = EwPlayer(id_user = cmd.message.author.id)
-	user_data = EwUser(member = cmd.message.author)
-
-	if user_data.poi not in [ewcfg.poi_id_tt_mines, ewcfg.poi_id_cv_mines, ewcfg.poi_id_mine]:
-		return await move(cmd)
-
-	else:
-		response = "Huh? What's this? There is a small, secluded crevice in the ground beneath you. This is extremely weird, you've never encountered anything like this before in all your days mining. Further investigation is required, obviously..."
-		await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
-		await asyncio.sleep(3)
-
-		if user_data.poi == ewcfg.poi_id_tt_mines:
-			response = "You enter the crevice hesitantly..."
-
-		if user_data.poi == ewcfg.poi_id_cv_mines:
-			response = "You enter the crevice hesitantly..."
-
-		if user_data.poi == ewcfg.poi_id_mine:
-			response = "You enter the crevice hesitantly..."
-
-		try:
-			await ewutils.send_message(cmd.client, cmd.message.author, response)
-		except:
-			can_message_user = False
-			await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
-
-		await asyncio.sleep(6)
-		if user_data.poi == ewcfg.poi_id_tt_mines:
-			response = "You splash down into a shallow pool of, what you can only assume, is slime. It is " \
-					   "pitch-black, you struggle to make out even the waves lapping at your knees. The air " \
-					   "is thick with a dense fog of toxic fumes. Nothing you haven't encountered before in " \
-					   "Toxington, yet this fog feels strangely foreign. You whip out your smartphone and " \
-					   "illuminate your surroundings."
-			response += "\nhttps://ew.krakissi.net/img/sc/tt1temnbnmwrwnek.png"
-			response += "\nhttps://ew.krakissi.net/img/sc/tt23z83eu38e8u.png"
-
-		if user_data.poi == ewcfg.poi_id_cv_mines:
-			response = "You crawl for a few moments until you reach a small opening. It is extremely dark, " \
-					   "you struggle to make out what exactly you’ve just entered. However, whatever it is, " \
-					   "it has clearly been inhabited by humans. How recently you cannot ascertain. Fragments of " \
-					   "clay pots and tablets lay all across the unnaturally smooth cave floor. You whip out " \
-					   "your smartphone and illuminate your surroundings."
-			response += "\nhttps://ew.krakissi.net/img/sc/cv1jioijlkn.png"
-			response += "\nhttps://ew.krakissi.net/img/sc/cv2bnbjkuwefd.png"
-
-		if user_data.poi == ewcfg.poi_id_mine:
-			response = "You drop several feet into… well, you quite frankly have no idea. It is so pitch-black " \
-					   "that you cannot make out any surroundings. All you know that is dark and damp. " \
-					   "It seems like someone was just here, recently… You whip out your smartphone and " \
-					   "illuminate your surroundings."
-			response += "\nhttps://ew.krakissi.net/img/sc/jr1zcugbtownn.png"
-			response += "\nhttps://ew.krakissi.net/img/sc/jr23b5nv4bv53n4.png"
-
-			if can_message_user:
-				await ewutils.send_message(cmd.client, cmd.message.author, response)
-			else:
-				await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
-
-			await asyncio.sleep(6)
-			response = "There seems to be someone's lost identification card laying on the ground."
-			response += "\nhttps://ew.krakissi.net/img/sc/N6CARDpibkjwheuidcw.png"
-
-		if can_message_user:
-			await ewutils.send_message(cmd.client, cmd.message.author, response)
-		else:
-			await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
-
-		await asyncio.sleep(12)
-		response = "You return to the Mines..."
-
-	await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+	return await move(cmd)
 	
 """
 	Player command to move themselves from one place to another.
@@ -1064,34 +1001,6 @@ async def move(cmd = None, isApt = False):
 							ad_data = EwAd(id_ad = id_ad)
 							ad_response = ewads.format_ad_response(ad_data)
 							await ewutils.send_message(cmd.client, channel, ewutils.formatMessage(cmd.message.author, ad_response))
-					
-					# TODO: Remove after Double Halloween
-					if poi_current.id_poi == ewcfg.poi_id_underworld:
-						if user_data.life_state != ewcfg.life_state_corpse:
-							potential_chosen_district = EwDistrict(district=poi_current.id_poi, id_server=user_data.id_server)
-							life_states = [ewcfg.life_state_juvenile, ewcfg.life_state_enlisted, ewcfg.life_state_executive]
-							market_data = EwMarket(id_server = cmd.message.server.id)
-							spawn_ready = False
-	
-							enemies_count = len(potential_chosen_district.get_enemies_in_district())
-							
-							# The Horseman spawns on four conditions
-							# 1 - A player enters the underworld while alive
-							# 2 - There are no enemies in the underworld
-							# 3 - He has not yet died twice.
-							# 4 - It has been at least two (real life) days since his last death.
-							
-							if int(time_now) > (market_data.horseman_timeofdeath + ewcfg.horseman_death_cooldown):
-								spawn_ready = True
-
-							# print(spawn_ready)
-							# print(market_data.horseman_deaths)
-							# print(enemies_count)
-							
-							if enemies_count == 0 and market_data.horseman_deaths <= 1 and spawn_ready:
-								dh_resp_cont = spawn_enemy(id_server=user_data.id_server, pre_chosen_type=ewcfg.enemy_type_doubleheadlessdoublehorseman, pre_chosen_poi=ewcfg.poi_id_underworld)
-	
-								await dh_resp_cont.post()
 
 					if len(user_data.faction) > 0 and user_data.poi in ewcfg.capturable_districts:
 						district = EwDistrict(
@@ -1221,7 +1130,7 @@ async def teleport_player(cmd):
 	author = cmd.message.author
 	user_data = EwUser(member=author)
 	
-	if author.server_permissions.administrator or user_data.life_state == ewcfg.life_state_kingpin:
+	if ewutils.DEBUG or author.server_permissions.administrator or user_data.life_state == ewcfg.life_state_kingpin:
 		pass
 	else:
 		return
@@ -1435,8 +1344,10 @@ async def scout(cmd):
 				if len(allies_in_district) > 3:
 					continue
 			if ewcfg.mutation_id_chameleonskin in scoutee_mutations:
-				detailed_players_resp += "\n" + scoutee_player.display_name
-				continue
+				member = cmd.message.server.get_member(scoutee_data.id_user)
+				if member == None or member.status == discord.Status.offline:
+					continue
+
 			if ewcfg.mutation_id_aposematicstench in scoutee_mutations:
 				num_players += math.floor(scoutee_data.slimelevel / 5)
 				continue
@@ -1660,3 +1571,44 @@ def get_slimeoids_resp(id_server, poi):
 			slimeoids_resp += "\n{} is here.".format(slimeoid_data.name)
 			
 	return slimeoids_resp
+
+
+"""
+	Command that moves everyone from one district to another
+"""
+async def boot(cmd):
+	author = cmd.message.author
+	user_data = EwUser(member=cmd.message.author)
+
+	if not author.server_permissions.administrator and user_data.life_state != ewcfg.life_state_kingpin:
+		response = "You do not have the power to move the masses from one location to another."
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+	if len(cmd.tokens) != 3:
+		response = 'Usage: !boot [location A] [location B]'
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+
+	destination_a = cmd.tokens[1]
+	destination_b = cmd.tokens[2]
+
+	old_poi = ewcfg.id_to_poi.get(destination_a)
+	new_poi = ewcfg.id_to_poi.get(destination_b)
+	
+
+	if old_poi != None and new_poi != None:
+	
+		district_data = EwDistrict(district = old_poi.id_poi, id_server = user_data.id_server)
+	
+		users = district_data.get_players_in_district()
+		
+		for user in users:
+			moved_user_data = EwUser(id_user=user, id_server=user_data.id_server)
+			moved_user_data.poi = new_poi.id_poi
+			moved_user_data.persist()
+	else:
+		response = '**DEBUG:** Invalid POIs'
+		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+		
+	response = "Everyone in {} has been moved to {}!".format(old_poi.id_poi, new_poi.id_poi)
+	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+

@@ -24,8 +24,10 @@ from ewplayer import EwPlayer
 from ewhunting import EwEnemy
 from ewmarket import EwMarket
 from ewstatuseffects import EwStatusEffect
+from ewitem import EwItem
 
 TERMINATE = False
+DEBUG = False
 
 db_pool = {}
 db_pool_id = 0
@@ -1093,7 +1095,15 @@ async def decrease_food_multiplier(id_user):
 
 async def spawn_enemies(id_server = None):
 	if random.randrange(3) == 0:
-		resp_cont = ewhunting.spawn_enemy(id_server)
+		weathertype = ewcfg.enemy_weathertype_normal
+
+		market_data = EwMarket(id_server=id_server)
+		# If it's raining, an enemy has  1/3 chance to spawn as a bicarbonate enemy, which doesn't take rain damage
+		if market_data.weather == ewcfg.weather_bicarbonaterain:
+			if random.randrange(2) == 0:
+				weathertype = ewcfg.enemy_weathertype_rainresist
+		
+		resp_cont = ewhunting.spawn_enemy(id_server=id_server, weather=weathertype)
 
 		await resp_cont.post()
 
@@ -1132,10 +1142,7 @@ def get_move_speed(user_data):
 	market_data = EwMarket(id_server = user_data.id_server)
 	move_speed = 1
 
-	if ewcfg.mutation_id_organicfursuit in mutations and (
-		(market_data.day % 31 == 0 and market_data.clock >= 20)
-		or (market_data.day % 31 == 1 and market_data.clock < 6)
-	):
+	if ewcfg.mutation_id_organicfursuit in mutations and check_fursuit_active(user_data.id_server):
 		move_speed *= 2
 	if ewcfg.mutation_id_lightasafeather in mutations and market_data.weather == "windy":
 		move_speed *= 2
@@ -1144,17 +1151,16 @@ def get_move_speed(user_data):
 
 	if user_data.time_expirpvp >= time_now:
 		move_speed = 0.5 # Reduces movement speed to half standard movement speed, even if you have mutations that speed it up.
-		
-	# TODO: Remove after Double Halloween
-	if user_data.life_state == ewcfg.life_state_corpse:
-		move_speed *= 2
 
 	return move_speed
 
 """ Damage all players in a district """
-def explode(damage = 0, district_data = None):
+def explode(damage = 0, district_data = None, market_data = None):
 	id_server = district_data.id_server
 	poi = district_data.name
+
+	if market_data == None:
+		market_data = EwMarket(id_server = district_data.id_server)
 
 	client = get_client()
 	server = client.get_server(id_server)
@@ -1173,71 +1179,96 @@ def explode(damage = 0, district_data = None):
 		user_data = EwUser(id_user = user, id_server = id_server)
 		mutations = user_data.get_mutations()
 
-		if True:
-			player_data = EwPlayer(id_user = user_data.id_user)
-			response = "{} is blown back by the explosion’s sheer force! They lose {} slime!!".format(player_data.display_name, damage)
+		user_weapon = None
+		user_weapon_item = None
+		if user_data.weapon >= 0:
+			user_weapon_item = EwItem(id_item = user_data.weapon)
+			user_weapon = ewcfg.weapon_map.get(user_weapon_item.item_props.get("weapon_type"))
+
+		# apply defensive mods
+		slimes_damage_target = damage * ewwep.damage_mod_defend(
+			shootee_data = user_data,
+			shootee_mutations = mutations,
+			shootee_weapon = user_weapon,
+			market_data = market_data
+		)
+
+		# apply sap armor
+		sap_armor = ewwep.get_sap_armor(shootee_data = user_data, sap_ignored = 0)
+		slimes_damage_target *= sap_armor
+		slimes_damage_target = int(max(0, slimes_damage_target))
+
+		player_data = EwPlayer(id_user = user_data.id_user)
+		response = "{} is blown back by the explosion’s sheer force! They lose {:,} slime!!".format(player_data.display_name, slimes_damage_target)
+		resp_cont.add_channel_response(channel, response)
+		slimes_damage = slimes_damage_target
+		if user_data.slimes < slimes_damage + user_data.bleed_storage:
+			# die in the explosion
+			district_data.change_slimes(n = user_data.slimes, source = ewcfg.source_killing)
+			district_data.persist()
+			slimes_dropped = user_data.totaldamage + user_data.slimes
+			explode_damage = slime_bylevel(user_data.slimelevel)
+
+			user_data.die(cause = ewcfg.cause_killing)
+			#user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
+			user_data.persist()
+
+			response = "Alas, {} was caught too close to the blast. They are consumed by the flames, and die in the explosion.".format(player_data.display_name)
 			resp_cont.add_channel_response(channel, response)
-			slimes_damage = damage
-			if user_data.slimes < slimes_damage + user_data.bleed_storage:
-				# die in the explosion
-				district_data.change_slimes(n = user_data.slimes, source = ewcfg.source_killing)
-				district_data.persist()
-				slimes_dropped = user_data.totaldamage + user_data.slimes
-				explode_damage = slime_bylevel(user_data.slimelevel)
 
-				user_data.die(cause = ewcfg.cause_killing)
-				#user_data.change_slimes(n = -slimes_dropped / 10, source = ewcfg.source_ghostification)
-				user_data.persist()
+			if ewcfg.mutation_id_spontaneouscombustion in mutations:
+				sub_explosion = explode(explode_damage, district_data)
+				resp_cont.add_response_container(sub_explosion)
 
-				response = "Alas, {} was caught too close to the blast. They are consumed by the flames, and die in the explosion.".format(player_data.display_name)
-				resp_cont.add_channel_response(channel, response)
-
-				if ewcfg.mutation_id_spontaneouscombustion in mutations:
-					sub_explosion = explode(explode_damage, district_data)
-					resp_cont.add_response_container(sub_explosion)
-
-				resp_cont.add_member_to_update(server.get_member(user_data.id_user))
-			else:
-				# survive
-				slime_splatter = 0.5 * slimes_damage
-				district_data.change_slimes(n = slime_splatter, source = ewcfg.source_killing)
-				district_data.persist()
-				slimes_damage -= slime_splatter
-				user_data.bleed_storage += slimes_damage
-				user_data.change_slimes(n = -slime_splatter, source = ewcfg.source_killing)
-				user_data.persist()
+			resp_cont.add_member_to_update(server.get_member(user_data.id_user))
+		else:
+			# survive
+			slime_splatter = 0.5 * slimes_damage
+			district_data.change_slimes(n = slime_splatter, source = ewcfg.source_killing)
+			district_data.persist()
+			slimes_damage -= slime_splatter
+			user_data.bleed_storage += slimes_damage
+			user_data.change_slimes(n = -slime_splatter, source = ewcfg.source_killing)
+			user_data.persist()
 
 	# damage enemies
 	for enemy in enemies:
 		enemy_data = EwEnemy(id_enemy = enemy, id_server = id_server)
 
-		if True:
-			response = "{} is blown back by the explosion’s sheer force! They lose {} slime!!".format(enemy_data.display_name, damage)
+		response = "{} is blown back by the explosion’s sheer force! They lose {:,} slime!!".format(enemy_data.display_name, damage)
+		resp_cont.add_channel_response(channel, response)
+
+		slimes_damage_target = damage
+			
+		# apply sap armor
+		sap_armor = ewwep.get_sap_armor(shootee_data = enemy_data, sap_ignored = 0)
+		slimes_damage_target *= sap_armor
+		slimes_damage_target = int(max(0, slimes_damage_target))
+
+		slimes_damage = slimes_damage_target
+		if enemy_data.slimes < slimes_damage + enemy_data.bleed_storage:
+			# die in the explosion
+			district_data.change_slimes(n = enemy_data.slimes, source = ewcfg.source_killing)
+			district_data.persist()
+			# slimes_dropped = enemy_data.totaldamage + enemy_data.slimes
+			# explode_damage = ewutils.slime_bylevel(enemy_data.level)
+
+			response = "Alas, {} was caught too close to the blast. They are consumed by the flames, and die in the explosion.".format(enemy_data.display_name)
+			resp_cont.add_response_container(ewhunting.drop_enemy_loot(enemy_data, district_data))
 			resp_cont.add_channel_response(channel, response)
-			slimes_damage = damage
-			if enemy_data.slimes < slimes_damage + enemy_data.bleed_storage:
-				# die in the explosion
-				district_data.change_slimes(n = enemy_data.slimes, source = ewcfg.source_killing)
-				district_data.persist()
-				# slimes_dropped = enemy_data.totaldamage + enemy_data.slimes
-				# explode_damage = ewutils.slime_bylevel(enemy_data.level)
 
-				response = "Alas, {} was caught too close to the blast. They are consumed by the flames, and die in the explosion.".format(enemy_data.display_name)
-				resp_cont.add_response_container(ewhunting.drop_enemy_loot(enemy_data, district_data))
-				resp_cont.add_channel_response(channel, response)
+			enemy_data.life_state = ewcfg.enemy_lifestate_dead
+			enemy_data.persist()
 
-				enemy_data.life_state = ewcfg.enemy_lifestate_dead
-				enemy_data.persist()
-
-			else:
-				# survive
-				slime_splatter = 0.5 * slimes_damage
-				district_data.change_slimes(n = slime_splatter, source = ewcfg.source_killing)
-				district_data.persist()
-				slimes_damage -= slime_splatter
-				enemy_data.bleed_storage += slimes_damage
-				enemy_data.change_slimes(n = -slime_splatter, source = ewcfg.source_killing)
-				enemy_data.persist()
+		else:
+			# survive
+			slime_splatter = 0.5 * slimes_damage
+			district_data.change_slimes(n = slime_splatter, source = ewcfg.source_killing)
+			district_data.persist()
+			slimes_damage -= slime_splatter
+			enemy_data.bleed_storage += slimes_damage
+			enemy_data.change_slimes(n = -slime_splatter, source = ewcfg.source_killing)
+			enemy_data.persist()
 	return resp_cont
 
 def is_otp(user_data):
@@ -1262,7 +1293,6 @@ def check_confirm_or_cancel(string):
 	if string.content.lower() == ewcfg.cmd_confirm or string.content.lower() == ewcfg.cmd_cancel:
 		return True
 	
-# TODO: Remove after Double Halloween
 def check_trick_or_treat(string):
 	if string.content.lower() == ewcfg.cmd_treat or string.content.lower() == ewcfg.cmd_trick:
 		return True
@@ -1284,3 +1314,54 @@ def generate_captcha(n = 4):
 		captcha += random.choice(ewcfg.alphabet)
 	return captcha.upper()
 
+async def sap_tick_loop(id_server):
+	interval = ewcfg.sap_tick_length
+	# causes a capture tick to happen exactly every 10 seconds (the "elapsed" thing might be unnecessary, depending on how long capture_tick ends up taking on average)
+	while not TERMINATE:
+		await asyncio.sleep(interval)
+		sap_tick(id_server)
+
+def sap_tick(id_server):
+
+	try:
+		users = execute_sql_query("SELECT {id_user} FROM users WHERE {id_server} = %s AND {life_state} > 0 AND {sap} + {hardened_sap} < {level}".format(
+			id_user = ewcfg.col_id_user,
+			life_state = ewcfg.col_life_state,
+			sap = ewcfg.col_sap,
+			hardened_sap = ewcfg.col_hardened_sap,
+			level = ewcfg.col_slimelevel,
+			id_server = ewcfg.col_id_server,
+		),(
+			id_server,
+		))
+
+		for user in users:
+			user_data = EwUser(id_user = user[0], id_server = id_server)
+			user_data.sap += 1
+			user_data.limit_fix()
+			user_data.persist()
+
+		enemies = execute_sql_query("SELECT {id_enemy} FROM enemies WHERE {id_server} = %s AND {hardened_sap} < {level} / 2".format(
+			id_enemy = ewcfg.col_id_enemy,
+			hardened_sap = ewcfg.col_enemy_hardened_sap,
+			level = ewcfg.col_enemy_level,
+			id_server = ewcfg.col_id_server,
+		),(
+			id_server,
+		))
+
+		for enemy in enemies:
+			if random.random() < 0.5:
+				enemy_data = EwEnemy(id_enemy = enemy[0])
+				enemy_data.hardened_sap += 1
+				enemy_data.persist()
+	except:
+		logMsg("An error occured in sap tick for server {}".format(id_server))
+
+def check_fursuit_active(id_server):
+	market_data = EwMarket(id_server=id_server)
+	if (market_data.day % 31 == 0 and market_data.clock >= 20
+	or market_data.day % 31 == 1 and market_data.clock < 6):
+		return True
+	else:
+		return False

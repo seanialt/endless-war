@@ -8,6 +8,7 @@ import ewutils
 import ewitem
 import ewrolemgr
 import ewstats
+import ewwep
 
 from ew import EwUser
 from ewitem import EwItem
@@ -22,6 +23,8 @@ from ewslimeoid import EwSlimeoid
 class EwEnemy:
 	id_enemy = 0
 	id_server = ""
+
+	combatant_type = "enemy"
 
 	# The amount of slime an enemy has
 	slimes = 0
@@ -75,10 +78,18 @@ class EwEnemy:
 	
 	# Determines if an enemy should use its rare variant or not
 	rare_status = 0
+	
+	# What kind of weather the enemy is suited to
+	weathertype = 0
+
+	# sap armor
+	hardened_sap = 0
 
 	""" Load the enemy data from the database. """
 
 	def __init__(self, id_enemy=None, id_server=None, enemytype=None):
+		self.combatant_type = ewcfg.combatant_type_enemy
+
 		query_suffix = ""
 
 		if id_enemy != None:
@@ -98,7 +109,7 @@ class EwEnemy:
 
 				# Retrieve object
 				cursor.execute(
-					"SELECT {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} FROM enemies{}".format(
+					"SELECT {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {} FROM enemies{}".format(
 						ewcfg.col_id_enemy,
 						ewcfg.col_id_server,
 						ewcfg.col_enemy_slimes,
@@ -118,6 +129,8 @@ class EwEnemy:
 						ewcfg.col_enemy_id_target,
 						ewcfg.col_enemy_raidtimer,
 						ewcfg.col_enemy_rare_status,
+						ewcfg.col_enemy_hardened_sap,
+						ewcfg.col_enemy_weathertype,
 						query_suffix
 					))
 				result = cursor.fetchone();
@@ -143,6 +156,8 @@ class EwEnemy:
 					self.id_target = result[16]
 					self.raidtimer = result[17]
 					self.rare_status = result[18]
+					self.hardened_sap = result[19]
+					self.weathertype = result[20]
 
 			finally:
 				# Clean up the database handles.
@@ -159,7 +174,7 @@ class EwEnemy:
 
 			# Save the object.
 			cursor.execute(
-				"REPLACE INTO enemies({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(
+				"REPLACE INTO enemies({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}) VALUES(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)".format(
 					ewcfg.col_id_enemy,
 					ewcfg.col_id_server,
 					ewcfg.col_enemy_slimes,
@@ -179,6 +194,8 @@ class EwEnemy:
 					ewcfg.col_enemy_id_target,
 					ewcfg.col_enemy_raidtimer,
 					ewcfg.col_enemy_rare_status,
+					ewcfg.col_enemy_hardened_sap,
+					ewcfg.col_enemy_weathertype,
 				), (
 					self.id_enemy,
 					self.id_server,
@@ -199,6 +216,8 @@ class EwEnemy:
 					self.id_target,
 					self.raidtimer,
 					self.rare_status,
+					self.hardened_sap,
+					self.weathertype,
 				))
 
 			conn.commit()
@@ -327,13 +346,16 @@ class EwEnemy:
 			miss = False
 			crit = False
 			backfire = False
+			backfire_damage = 0
 			strikes = 0
+			sap_damage = 0
+			sap_ignored = 0
 
 			# maybe enemies COULD have weapon skills? could punishes players who die to the same enemy without mining up beforehand
 			# slimes_damage = int((slimes_spent * 4) * (100 + (user_data.weaponskill * 10)) / 100.0)
 
 			# since enemies dont use up slime or hunger, this is only used for damage calculation
-			slimes_spent = int(ewutils.slime_bylevel(enemy_data.level) / 20 * ewcfg.enemy_attack_tick_length / 2)
+			slimes_spent = int(ewutils.slime_bylevel(enemy_data.level) / 40 * ewcfg.enemy_attack_tick_length / 2)
 
 			slimes_damage = int(slimes_spent * 4)
 
@@ -341,22 +363,9 @@ class EwEnemy:
 				slimes_damage /= 2  # specific to juvies
 			if enemy_data.enemytype == ewcfg.enemy_type_microslime:
 				slimes_damage *= 20  # specific to microslime
-
-			# Organic Fursuit
-			if ewcfg.mutation_id_organicfursuit in target_mutations and (
-					(market_data.day % 31 == 0 and market_data.clock >= 20)
-					or (market_data.day % 31 == 1 and market_data.clock < 6)
-			):
-				slimes_damage *= 0.1
-
-			# Fat chance
-			if ewcfg.mutation_id_fatchance in target_mutations and target_data.hunger / target_data.get_hunger_max() > 0.5:
-				slimes_damage *= 0.75
-
-			# defensive weapon
-			if target_weapon != None:
-				if ewcfg.weapon_class_defensive in target_weapon.classes:
-					slimes_damage *= 0.5
+				
+			if enemy_data.weathertype == ewcfg.enemy_weathertype_rainresist:
+				slimes_damage *= 1.5
 
 			slimes_dropped = target_data.totaldamage + target_data.slimes
 
@@ -405,7 +414,10 @@ class EwEnemy:
 							crit=crit,
 							slimes_damage=slimes_damage,
 							enemy_data=enemy_data,
-							target_data=target_data
+							target_data=target_data,
+							sap_damage=sap_damage,
+							sap_ignored=sap_ignored,
+							backfire_damage=backfire_damage
 						)
 
 						# Make adjustments
@@ -417,6 +429,9 @@ class EwEnemy:
 						crit = ctn.crit
 						slimes_damage = ctn.slimes_damage
 						strikes = ctn.strikes
+						sap_damage = ctn.sap_damage
+						sap_ignored = ctn.sap_ignored
+						backfire_damage = ctn.backfire_damage
 
 					# can't hit lucky lucy
 					if target_data.life_state == ewcfg.life_state_lucky:
@@ -424,9 +439,34 @@ class EwEnemy:
 
 					if miss:
 						slimes_damage = 0
+						sap_damage = 0
+						crit = False
+	
+					if crit:
+						sap_damage += 1
 
 					enemy_data.persist()
 					target_data = EwUser(id_user = target_data.id_user, id_server = target_data.id_server)
+
+					# apply defensive mods
+					slimes_damage *= ewwep.damage_mod_defend(
+						shootee_data = target_data,
+						shootee_mutations = target_mutations,
+						shootee_weapon = target_weapon,
+						market_data = market_data
+					)
+
+					if target_weapon != None:
+						if sap_damage > 0 and ewcfg.weapon_class_defensive in target_weapon.classes:
+							sap_damage -= 1
+
+			
+					# apply hardened sap armor
+					sap_armor = ewwep.get_sap_armor(shootee_data = target_data, sap_ignored = sap_ignored)
+					slimes_damage *= sap_armor
+					slimes_damage = int(max(slimes_damage, 0))
+    
+					sap_damage = min(sap_damage, target_data.hardened_sap)
 
 
 					if slimes_damage >= target_data.slimes - target_data.bleed_storage:
@@ -441,7 +481,7 @@ class EwEnemy:
 					else:
 						slimes_drained = 0
 
-					damage = str(slimes_damage)
+					damage = slimes_damage
 
 					slimes_tobleed = int((slimes_damage - slimes_drained) / 2)
 					if ewcfg.mutation_id_bleedingheart in target_mutations:
@@ -455,6 +495,7 @@ class EwEnemy:
 					district_data.change_slimes(n=slimes_splatter, source=ewcfg.source_killing)
 					target_data.bleed_storage += slimes_tobleed
 					target_data.change_slimes(n=- slimes_directdamage, source=ewcfg.source_damage)
+					target_data.hardened_sap -= sap_damage
 					sewer_data.change_slimes(n=slimes_drained)
 
 					if was_killed:
@@ -523,7 +564,6 @@ class EwEnemy:
 						resp_cont.add_channel_response(ewcfg.channel_sewers, deathreport)
 						resp_cont.add_channel_response(ch_name, response)
 						if ewcfg.mutation_id_spontaneouscombustion in target_mutations:
-							import ewwep
 							explode_resp = "\n{} spontaneously combusts, horribly dying in a fiery explosion of slime and shrapnel!! Oh, the humanity!".format(
 								target_player.display_name)
 							resp_cont.add_channel_response(ch_name, explode_resp)
@@ -549,6 +589,13 @@ class EwEnemy:
 									name_enemy = enemy_data.display_name,
 									name_target = target_player.display_name
 								))
+								if enemy_data.slimes - enemy_data.bleed_storage <= backfire_damage:
+									response += "\n\n" + drop_enemy_loot(enemy_data, district_data)
+									enemy_data.life_state = ewcfg.enemy_lifestate_dead
+									delete_enemy(enemy_data)
+								else:
+									enemy_data.change_slimes(n = -backfire_damage / 2)
+									enemy_data.bleed_storage += int(backfire_damage / 2)
 							else:
 								response = used_attacktype.str_damage.format(
 									name_enemy=enemy_data.display_name,
@@ -561,16 +608,20 @@ class EwEnemy:
 										name_enemy=enemy_data.display_name,
 										name_target=target_player.display_name
 									))
-								response += " {target_name} loses {damage} slime!".format(
+								sap_response = ""
+								if sap_damage > 0:
+									sap_response = " and {sap_damage} hardened sap".format(sap_damage = sap_damage)
+								response += " {target_name} loses {damage:,} slime{sap_response}!".format(
 									target_name=target_player.display_name,
-									damage=damage
+									damage=damage,
+									sap_response=sap_response
 								)
 						else:
 							if miss:
 								response = "{target_name} dodges the {enemy_name}'s strike.".format(
 									target_name=target_player.display_name, enemy_name=enemy_data.display_name)
 							else:
-								response = "{target_name} is hit!! {target_name} loses {damage} slime!".format(
+								response = "{target_name} is hit!! {target_name} loses {damage:,} slime!".format(
 									target_name=target_player.display_name,
 									damage=damage
 								)
@@ -665,11 +716,14 @@ class EwEnemy:
 class EwEnemyEffectContainer:
 	miss = False
 	backfire = False
+	backfire_damage = 0
 	crit = False
 	strikes = 0
 	slimes_damage = 0
 	enemy_data = None
 	target_data = None
+	sap_damage = 0
+	sap_ignored = 0
 
 	# Debug method to dump out the members of this object.
 	def dump(self):
@@ -692,7 +746,10 @@ class EwEnemyEffectContainer:
 			slimes_damage=0,
 			slimes_spent=0,
 			enemy_data=None,
-			target_data=None
+			target_data=None,
+			sap_damage=0,
+			sap_ignored=0,
+			backfire_damage=0
 	):
 		self.miss = miss
 		self.backfire = backfire
@@ -702,6 +759,9 @@ class EwEnemyEffectContainer:
 		self.slimes_spent = slimes_spent
 		self.enemy_data = enemy_data
 		self.target_data = target_data
+		self.sap_damage = sap_damage
+		self.sap_ignored = sap_ignored
+		self.backfire_damage = backfire_damage
 
 # Debug command. Could be used for events, perhaps?
 async def summonenemy(cmd):
@@ -741,6 +801,7 @@ async def summonenemy(cmd):
 		enemy.level = level_byslime(enemy.slimes)
 		enemy.lifetime = time_now
 		enemy.identifier = set_identifier(poi.id_poi, user_data.id_server)
+		enemy.weathertype = ewcfg.enemy_weathertype_normal
 		
 		# Re-assign rare_status to 0 so custom names don't confuse the dict in ewcfg
 		enemy.rare_status = 0
@@ -819,7 +880,7 @@ async def enemy_perform_action(id_server):
 	#ewutils.logMsg("time spent on performing enemy actions: {}".format(time_end - time_start))
 
 # Spawns an enemy in a randomized outskirt district. If a district is full, it will try again, up to 5 times.
-def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
+def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None, weather = None):
 	time_now = int(time.time())
 	response = ""
 	ch_name = ""
@@ -922,10 +983,13 @@ def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
 		enemy.initialslimes = enemy.slimes
 		enemy.poi = chosen_poi
 		enemy.identifier = set_identifier(chosen_poi, id_server)
+		enemy.hardened_sap = int(enemy.level / 2)
+		enemy.weathertype = weather
 		
-		market_data = EwMarket(id_server=id_server)
-		if (enemytype == ewcfg.enemy_type_doubleheadlessdoublehorseman or enemytype == ewcfg.enemy_type_doublehorse) and market_data.horseman_deaths >= 1:
-			enemy.slimes *= 1.5
+		if weather != ewcfg.enemy_weathertype_normal:
+			if weather == ewcfg.enemy_weathertype_rainresist:
+				enemy.display_name = "Bicarbonate {}".format(enemy.display_name)
+				enemy.slimes *= 2
 
 		enemy.persist()
 
@@ -934,16 +998,6 @@ def spawn_enemy(id_server, pre_chosen_type = None, pre_chosen_poi = None):
 			if enemytype == ewcfg.enemy_type_sandbag:
 				response = "A new {} just got sent in. It's level {}, and has {} slime.\n*'Don't hold back!'*, the Dojo Master cries out from afar.".format(enemy.display_name, enemy.level, enemy.slimes)
 			
-			# TODO: Remove after Double Halloween
-			if enemytype == ewcfg.enemy_type_doubleheadlessdoublehorseman:
-				response = "***BEHOLD!!!***  The {} has arrived to challenge thee! He is of {} slime, and {} in level. Happy Double Halloween, you knuckleheads!".format(enemy.display_name, enemy.slimes, enemy.level)
-				
-				if market_data.horseman_deaths >= 1:
-					response += "\n***BACK SO SOON, MORTALS? I'M JUST GETTING WARMED UP, BAHAHAHAHAHAHA!!!***"
-				
-			if enemytype == ewcfg.enemy_type_doublehorse:
-				response = "***HARK!!!***  Clopping echoes throughout the cave! The {} has arrived with {} slime, and {} levels. And on top of him rides...".format(enemy.display_name, enemy.slimes, enemy.level)
-		
 		ch_name = ewcfg.id_to_poi.get(enemy.poi).channel
 
 	if len(response) > 0 and len(ch_name) > 0:
@@ -959,17 +1013,24 @@ def find_enemy(enemy_search=None, user_data=None):
 
 	if enemy_search != None:
 
-		for enemy_type in ewcfg.enemy_data_table:
-			if enemy_search.lower() in ewcfg.enemy_data_table[enemy_type]["aliases"]:
-				enemy_search_alias = enemy_type
-				continue
-
 		enemy_search_tokens = enemy_search.split(' ')
 
-		if enemy_search_tokens[len(enemy_search_tokens) - 1].upper() in ewcfg.identifier_letters:
+		for enemy_type in ewcfg.enemy_data_table:
+			aliases = ewcfg.enemy_data_table[enemy_type]["aliases"]
+			if enemy_search.lower() in aliases:
+				enemy_search_alias = enemy_type
+				break
+			if not set(enemy_search_tokens).isdisjoint(set(aliases)):
+				enemy_search_alias = enemy_type
+				break
+
+		tokens_set_upper = set(enemy_search.upper().split(' '))
+		identifiers_found = tokens_set_upper.intersection(set(ewcfg.identifier_letters))
+
+		if len(identifiers_found) > 0:
 			# user passed in an identifier for a district specific enemy
 
-			searched_identifier = enemy_search_tokens[len(enemy_search_tokens) - 1].upper()
+			searched_identifier = identifiers_found.pop()
 
 			enemydata = ewutils.execute_sql_query(
 				"SELECT {id_enemy} FROM enemies WHERE {poi} = %s AND {identifier} = %s AND {life_state} = 1".format(
@@ -1005,7 +1066,7 @@ def find_enemy(enemy_search=None, user_data=None):
 					enemy_found = enemy
 					break
 
-				if (enemy.display_name.lower() in enemy_search_tokens):
+				if (enemy.display_name.lower() in enemy_search) or (enemy.enemytype in enemy_search_tokens):
 					enemy_found = enemy
 					break
 
@@ -1443,6 +1504,7 @@ def get_enemy_data(enemy_type):
 	enemy.id_target = ""
 	enemy.raidtimer = 0
 	enemy.rare_status = rare_status
+	enemy.weathertype = ""
 		
 	if enemy_type in ewcfg.raid_bosses:
 		enemy.life_state = ewcfg.enemy_lifestate_unactivated

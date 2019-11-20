@@ -49,6 +49,8 @@ CREATE TABLE users (
 	time_lastenlist int NOT NULL DEFAULT '0',
 	active_slimeoid int NOT NULL DEFAULT '-1',
 	has_soul int NOT NULL DEFAULT '1',
+	sap int NOT NULL DEFAULT '0',
+	hardened_sap int NOT NULL DEFAULT '0',
 
 	CONSTRAINT id_user_server PRIMARY KEY (id_user, id_server)
 );
@@ -75,8 +77,6 @@ CREATE TABLE markets (
 	donated_poudrins bigint NOT NULL DEFAULT '0',
 	caught_fish int NOT NULL DEFAULT '0',
 	splattered_slimes bigint NOT NULL DEFAULT '0',
-	horseman_deaths int NOT NULL DEFAULT '0',
-	horseman_timeofdeath bigint NOT NULL DEFAULT '0',
 
 	PRIMARY KEY (id_server)
 );
@@ -222,6 +222,8 @@ CREATE TABLE enemies (
 	id_target varchar(128) NOT NULL DEFAULT '',
 	raidtimer bigint NOT NULL DEFAULT '0',
 	rare_status int NOT NULL DEFAULT '0',
+	hardened_sap int NOT NULL DEFAULT '0',
+	weathertype varchar(32) NOT NULL DEFAULT '',
 
 	PRIMARY KEY (id_enemy)
 );
@@ -233,6 +235,7 @@ CREATE TABLE districts (
 	capturing_faction varchar(32) NOT NULL DEFAULT '',
 	capture_points bigint NOT NULL DEFAULT '0',
 	slimes bigint NOT NULL DEFAULT '0',
+	time_unlock int NOT NULL DEFAULT '0',
 
 	PRIMARY KEY (id_server, district)
 );
@@ -286,6 +289,7 @@ CREATE TABLE status_effects (
 	time_expir int NOT NULL DEFAULT '-1',
 	value varchar(255) NOT NULL DEFAULT 0,
 	source varchar(128) NOT NULL DEFAULT '',
+	id_target varchar(128) NOT NULL DEFAULT '',
 
 	PRIMARY KEY (id_server, id_user, id_status)
 );

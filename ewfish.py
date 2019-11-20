@@ -8,6 +8,7 @@ import ewitem
 from ewmarket import EwMarket
 from ew import EwUser
 from ewitem import EwItem
+from ewdistrict import EwDistrict
 
 class EwFisher:
 	fishing = False
@@ -16,6 +17,7 @@ class EwFisher:
 	current_size = ""
 	pier = ""
 	bait = False
+	high = False
 
 fishers = {}
 
@@ -311,6 +313,7 @@ async def cast(cmd):
 	has_reeled = False
 	user_data = EwUser(member = cmd.message.author)
 	market_data = EwMarket(id_server = cmd.message.author.server.id)
+	statuses = user_data.getStatusEffects()
 
 	if cmd.message.author.id not in fishers.keys():
 		fishers[cmd.message.author.id] = EwFisher()
@@ -339,6 +342,8 @@ async def cast(cmd):
 				if weapon.id_weapon == "fishingrod":
 					has_fishingrod = True
 
+			if ewcfg.status_high_id in statuses:
+				fisher.high = True
 			fisher.current_fish = gen_fish(market_data, cmd, has_fishingrod)
 			fisher.fishing = True
 			fisher.bait = False
@@ -432,9 +437,12 @@ async def cast(cmd):
 					fun = 1
 				else:
 					damp = random.randrange(fun)
-					
-				await asyncio.sleep(60)
-				user_data = EwUser(member = cmd.message.author)
+
+				if not fisher.high:
+					await asyncio.sleep(60)
+				else:
+					await asyncio.sleep(30)
+				user_data = EwUser(member=cmd.message.author)
 
 				if user_data.poi != fisher.pier:
 					fisher.fishing = False
@@ -488,6 +496,7 @@ async def reel(cmd):
 	if cmd.message.author.id not in fishers.keys():
 		fishers[cmd.message.author.id] = EwFisher()
 	fisher = fishers[cmd.message.author.id]
+	poi = ewcfg.id_to_poi.get(user_data.poi)
 
 	# Ghosts cannot fish.
 	if user_data.life_state == ewcfg.life_state_corpse:
@@ -614,6 +623,17 @@ async def reel(cmd):
 
 				if has_fishingrod == True:
 					slime_gain = slime_gain * 2
+
+				if fisher.current_fish == "plebefish":
+					slime_gain = ewcfg.fish_gain * .5
+					value = 10
+				if poi.is_subzone:
+					district_data = EwDistrict(district = poi.mother_district, id_server = cmd.message.server.id)
+				else:
+					district_data = EwDistrict(district = poi.id_poi, id_server = cmd.message.server.id)
+
+				if district_data.controlling_faction != "" and district_data.controlling_faction == user_data.faction:
+					slime_gain *= 2
 
 				ewitem.item_create(
 					id_user = cmd.message.author.id,
@@ -897,7 +917,7 @@ async def barter(cmd):
 						max_value = value * 6000 # 600,000 slime for a colossal promo fish, 120,000 for a miniscule common fish.
 						min_value = max_value / 10 # 60,000 slime for a colossal promo fish, 12,000 for a miniscule common fish.
 
-						slime_gain = random.randint(min_value, max_value)
+						slime_gain = round(random.triangular(min_value, max_value, min_value * 2))
 
 						offer.offer_receive = slime_gain
 

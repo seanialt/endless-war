@@ -20,19 +20,19 @@ class EwStatusEffectDef:
 	crit_mod = 0
 
 	def __init__(
-        self,
-        id_status = "",
-        time_expire = -1,
-        str_acquire = "",
-        str_describe = "",
-        str_describe_self = "",
+		self,
+		id_status = "",
+		time_expire = -1,
+		str_acquire = "",
+		str_describe = "",
+		str_describe_self = "",
 		dmg_mod_self = 0,
 		miss_mod_self = 0,
 		crit_mod_self = 0,
 		dmg_mod = 0,
 		miss_mod = 0,
 		crit_mod = 0
-    ):
+	):
 		self.id_status = id_status
 		self.time_expire = time_expire
 		self.str_acquire = str_acquire
@@ -53,6 +53,7 @@ class EwStatusEffect:
 	time_expire = -1
 	value = 0
 	source = ""
+	id_target = ""
 
 	def __init__(
 		self,
@@ -62,7 +63,8 @@ class EwStatusEffect:
 		value = 0,
 		source = "",
 		id_user = None,
-		id_server = None
+		id_server = None,
+		id_target = "",
 	):
 		if user_data != None:
 			id_user = user_data.id_user
@@ -75,6 +77,7 @@ class EwStatusEffect:
 			self.time_expire = time_expire
 			self.value = value
 			self.source = source
+			self.id_target = id_target
 			time_now = int(time.time())
 
 			try:
@@ -83,17 +86,18 @@ class EwStatusEffect:
 				cursor = conn.cursor()
 
 				# Retrieve object
-				cursor.execute("SELECT {time_expire}, {value}, {source} FROM status_effects WHERE {id_status} = %s and {id_server} = %s and {id_user} = %s".format(
-                    time_expire = ewcfg.col_time_expir,
-                    id_status = ewcfg.col_id_status,
-                    id_server = ewcfg.col_id_server,
-                    id_user = ewcfg.col_id_user,
+				cursor.execute("SELECT {time_expire}, {value}, {source}, {id_target} FROM status_effects WHERE {id_status} = %s and {id_server} = %s and {id_user} = %s".format(
+					time_expire = ewcfg.col_time_expir,
+					id_status = ewcfg.col_id_status,
+					id_server = ewcfg.col_id_server,
+					id_user = ewcfg.col_id_user,
 					value = ewcfg.col_value,
-					source = ewcfg.col_source
+					source = ewcfg.col_source,
+					id_target = ewcfg.col_status_target,
 				), (
 					self.id_status,
-                    self.id_server,
-                    self.id_user
+					self.id_server,
+					self.id_user
 				))
 				result = cursor.fetchone()
 
@@ -104,20 +108,22 @@ class EwStatusEffect:
 
 				else:
 					# Save the object.
-					cursor.execute("REPLACE INTO status_effects({}, {}, {}, {}, {}, {}) VALUES(%s, %s, %s, %s, %s, %s)".format(
+					cursor.execute("REPLACE INTO status_effects({}, {}, {}, {}, {}, {}, {}) VALUES(%s, %s, %s, %s, %s, %s, %s)".format(
 						ewcfg.col_id_server,
 						ewcfg.col_id_user,
 						ewcfg.col_id_status,
 						ewcfg.col_time_expir,
 						ewcfg.col_value,
-						ewcfg.col_source
+						ewcfg.col_source,
+						ewcfg.col_status_target,
 					), (
 						self.id_server,
 						self.id_user,
 						self.id_status,
 						(self.time_expire + time_now) if self.time_expire > 0 else self.time_expire,
 						self.value,
-						self.source
+						self.source,
+						self.id_target,
 					))
 
 					self.time_expire = (self.time_expire + time_now) if self.time_expire > 0 else self.time_expire
@@ -137,20 +143,22 @@ class EwStatusEffect:
 			cursor = conn.cursor()
 
 			# Save the object.
-			cursor.execute("REPLACE INTO status_effects({}, {}, {}, {}, {}, {}) VALUES(%s, %s, %s, %s, %s, %s)".format(
+			cursor.execute("REPLACE INTO status_effects({}, {}, {}, {}, {}, {}, {}) VALUES(%s, %s, %s, %s, %s, %s, %s)".format(
 				ewcfg.col_id_server,
 				ewcfg.col_id_user,
 				ewcfg.col_id_status,
 				ewcfg.col_time_expir,
 				ewcfg.col_value,
-				ewcfg.col_source
+				ewcfg.col_source,
+				ewcfg.col_status_target,
 			), (
 				self.id_server,
 				self.id_user,
-                self.id_status,
+				self.id_status,
 				self.time_expire,
 				self.value,
-				self.source
+				self.source,
+				self.id_target,
 			))
 
 			conn.commit()

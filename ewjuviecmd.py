@@ -166,6 +166,7 @@ async def mine(cmd):
 	user_data = EwUser(member = cmd.message.author)
 	mutations = user_data.get_mutations()
 	time_now = int(time.time())
+	poi = ewcfg.id_to_poi.get(user_data.poi)
 
 	response = ""
 	# Kingpins can't mine.
@@ -206,8 +207,12 @@ async def mine(cmd):
 				if world_events.get(id_event) == ewcfg.event_type_minecollapse:
 					event_data = EwWorldEvent(id_event = id_event)
 					if event_data.event_props.get('id_user') == user_data.id_user and event_data.event_props.get('poi') == user_data.poi:
-						captcha = event_data.event_props.get('captcha')
-						if captcha in cmd.tokens[1:]:
+						captcha = event_data.event_props.get('captcha').lower()
+						tokens_lower = []
+						for token in cmd.tokens[1:]:
+							tokens_lower.append(token.lower())
+
+						if captcha in tokens_lower:
 							ewworldevent.delete_world_event(id_event = id_event)
 							response = "You escape from the collapsing mineshaft."
 							return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
@@ -238,7 +243,8 @@ async def mine(cmd):
 
 			if type(mining_yield) == type(""):
 				response = mining_yield
-				await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+				if len(response) > 0:
+					await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
 				return await print_grid(cmd)
 					
 
@@ -350,6 +356,14 @@ async def mine(cmd):
 			#alternate_yield = math.floor(200 + slime_bylevel ** (1 / math.e))
 
 			#mining_yield = min(mining_yield, alternate_yield)
+
+			if poi.is_subzone:
+				district_data = EwDistrict(district = poi.mother_district, id_server = cmd.message.server.id)
+			else:
+				district_data = EwDistrict(district = poi.id_poi, id_server = cmd.message.server.id)
+
+			if district_data.controlling_faction != "" and district_data.controlling_faction == user_data.faction:
+				mining_yield *= 2
 
 			if has_pickaxe == True:
 				mining_yield *= 2
@@ -690,38 +704,24 @@ async def crush(cmd):
 			# delete a slime poudrin from the player's inventory
 			ewitem.item_delete(id_item=sought_id)
 
-			user_data.slimes += crush_slimes
+			status_effects = user_data.getStatusEffects()
+			sap_resp = ""
+			if ewcfg.status_sapfatigue_id not in status_effects:
+				sap_gain = 5
+				sap_gain = max(0, min(sap_gain, user_data.slimelevel - (user_data.hardened_sap + user_data.sap)))
+				if sap_gain > 0:
+					user_data.sap += sap_gain
+					user_data.applyStatus(id_status = ewcfg.status_sapfatigue_id, source = user_data.id_user)
+					sap_resp = " and {} sap".format(sap_gain)
+
+			levelup_response = user_data.change_slimes(n = crush_slimes, source = ewcfg.source_crush)
 			user_data.persist()
 
-			response = "You crush the hardened slime crystal with your bare hands.\nYou gain {} slime. Sick, dude!!".format(crush_slimes)
+			response = "You crush the hardened slime crystal with your bare hands.\nYou gain {} slime{}. Sick, dude!!".format(crush_slimes, sap_resp)
 			
-		# TODO: Remove after Double Halloween
-		elif item_data.item_type == ewcfg.it_food:
-			candy_id = item_data.item_props.get("id_food")
-			if candy_id in ewcfg.candy_ids_list:
-				# delete candy from the player's inventory
-				ewitem.item_delete(id_item=sought_id)
-				
-				gristnum = random.randrange(2) + 1
-				gristcount = 0
-	
-				item_name = item_data.item_props.get('food_name')
-				
-				response = "You crush the {} with an iron grip. You gain {} piece(s) of Double Halloween Grist!".format(item_name, gristnum)
-				
-				while gristcount < gristnum:
-					
-					grist = ewcfg.grist_results[0]
-					grist_props = ewitem.gen_item_props(grist)
-					
-					ewitem.item_create(
-						item_type=grist.item_type,
-						id_user=cmd.message.author.id,
-						id_server=cmd.message.server.id,
-						item_props=grist_props
-					)
-					
-					gristcount += 1
+			if len(levelup_response) > 0:
+				response += "\n\n" + levelup_response
+			
 	else:
 		if item_search:  # if they didnt forget to specify an item and it just wasn't found
 			response = "You don't have one."
@@ -759,7 +759,7 @@ def init_grid_minesweeper(poi, id_server):
 			row.append(ewcfg.cell_empty)
 		grid.append(row)
 
-	num_mines = 30
+	num_mines = 20
 
 	row = random.randrange(num_rows)
 	col = random.randrange(num_cols)
@@ -1116,6 +1116,8 @@ def get_mining_yield_minesweeper(cmd, grid_cont):
 	grid = grid_cont.grid
 	grid_multiplier = grid_cont.cells_mined ** 0.4
 
+	hunger_cost_mod = ewutils.hunger_cost_mod(user_data.slimelevel)
+
 	row = -1
 	col = -1
 	if cmd.tokens_count < 2:
@@ -1125,6 +1127,12 @@ def get_mining_yield_minesweeper(cmd, grid_cont):
 	for token in cmd.tokens[1:]:
 				
 		coords = token.lower()
+		if coords == "reset":
+			user_data.hunger += int(ewcfg.hunger_perminereset * hunger_cost_mod)
+			user_data.persist()
+			init_grid_minesweeper(user_data.poi, user_data.id_server)
+			return ""
+
 		if col < 1:
 		
 			for char in coords:

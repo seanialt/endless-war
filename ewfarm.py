@@ -11,6 +11,7 @@ from ewmarket import EwMarket
 from ewfood import EwFood
 from ewitem import EwItem
 from ewslimeoid import EwSlimeoid
+from ewdistrict import EwDistrict
 
 class EwFarm:
 	id_server = ""
@@ -129,6 +130,7 @@ async def reap(cmd):
 	response = ""
 	levelup_response = ""
 	mutations = user_data.get_mutations()
+	poi = ewcfg.id_to_poi.get(user_data.poi)
 
 	# Checking availability of reap action
 	if user_data.life_state != ewcfg.life_state_juvenile:
@@ -164,6 +166,15 @@ async def reap(cmd):
 					user_initial_level = user_data.slimelevel
 
 					slime_gain = farm.slimes_onreap
+
+					if poi.is_subzone:
+						district_data = EwDistrict(district = poi.mother_district, id_server = cmd.message.server.id)
+					else:
+						district_data = EwDistrict(district = poi.id_poi, id_server = cmd.message.server.id)
+
+					if district_data.controlling_faction != "" and district_data.controlling_faction == user_data.faction:
+						slime_gain *= 2
+
 					response = "You reap what you’ve sown. Your investment has yielded {} slime, ".format(slime_gain)
 
 					# Determine if an item is found.

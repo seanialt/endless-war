@@ -2964,6 +2964,13 @@ async def dress_slimeoid(cmd):
 
 					if cos.item_props.get('slimeoid') == 'true':
 						already_adorned = True
+					elif cos.item_props.get("context") == 'costume':
+						if not ewutils.check_fursuit_active(cos.id_server):
+							response = "You can't dress your slimeoid with your costume right now."
+							return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+						else:
+							item_sought = cos
+							break
 					else:
 						item_sought = cos
 						break

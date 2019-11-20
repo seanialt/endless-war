@@ -138,34 +138,42 @@ async def create(cmd):
 """
 	Command that grants someone a specific cosmetic
 """
-async def exalt(cmd):
-	author = cmd.message.author
-	user_data = EwUser(member=author)
-
-	if not author.server_permissions.administrator and user_data.life_state != ewcfg.life_state_kingpin:
-		response = "You do not have the power within you worthy of !exalting another player."
-		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
-	
-	
-	if cmd.mentions[0]:
-		recipient = cmd.mentions[0]
-	else:
-		response = 'You need to specify a recipient. Usage: !exalt @[recipient].'
-		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
-	
-	medallion = ewcfg.medallion_results[0]
-	medallion_props = ewitem.gen_item_props(medallion)
-
-	medallion_id = ewitem.item_create(
-		item_type=medallion.item_type,
-		id_user=recipient.id,
-		id_server=cmd.message.server.id,
-		item_props=medallion_props
-	)
-
-	# Soulbind the medallion. A player can get at most twice, but later on a new command could be added to destroy them/trade them in.
-	# I imagine this would be something similar to how players can destroy Australium Wrenches in TF2, which broadcasts a message to everyone in the game, or something.
-	ewitem.soulbind(medallion_id)
-
-	response = "**{} has been gifted the Double Halloween Medallion!!**\n".format(recipient.display_name)
-	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+# async def exalt(cmd):
+# 	author = cmd.message.author
+# 	user_data = EwUser(member=author)
+# 
+# 	if not author.server_permissions.administrator and user_data.life_state != ewcfg.life_state_kingpin:
+# 		response = "You do not have the power within you worthy of !exalting another player."
+# 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+# 	
+# 	
+# 	if cmd.mentions[0]:
+# 		recipient = cmd.mentions[0]
+# 	else:
+# 		response = 'You need to specify a recipient. Usage: !exalt @[recipient].'
+# 		return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
+# 
+# 	# Gather the Medallion
+# 	medallion_results = []
+# 	for m in ewcfg.cosmetic_items_list:
+# 		if m.ingredients == 'HorsemanSoul':
+# 			medallion_results.append(m)
+# 		else:
+# 			pass
+# 	
+# 	medallion = medallion_results[0]
+# 	medallion_props = ewitem.gen_item_props(medallion)
+# 
+# 	medallion_id = ewitem.item_create(
+# 		item_type=medallion.item_type,
+# 		id_user=recipient.id,
+# 		id_server=cmd.message.server.id,
+# 		item_props=medallion_props
+# 	)
+# 
+# 	# Soulbind the medallion. A player can get at most twice, but later on a new command could be added to destroy them/trade them in.
+# 	# I imagine this would be something similar to how players can destroy Australium Wrenches in TF2, which broadcasts a message to everyone in the game, or something.
+# 	ewitem.soulbind(medallion_id)
+# 
+# 	response = "**{} has been gifted the Double Halloween Medallion!!**\n".format(recipient.display_name)
+# 	return await ewutils.send_message(cmd.client, cmd.message.channel, ewutils.formatMessage(cmd.message.author, response))
